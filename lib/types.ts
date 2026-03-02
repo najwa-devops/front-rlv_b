@@ -73,6 +73,8 @@ export interface Tier {
 
   active: boolean;
   hasAccountingConfig?: boolean | undefined;
+  hasTvaConfiguration?: boolean | undefined;
+  tvaDisplayFormat?: string | undefined;
 
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
@@ -130,6 +132,8 @@ export interface LocalBankStatement {
   isProcessing?: boolean | undefined
   createdAt: Date
   updatedAt?: Date | undefined
+  rawOcrText?: string
+  cleanedOcrText?: string
 }
 
 export interface BankOption {

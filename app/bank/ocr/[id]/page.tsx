@@ -3,12 +3,38 @@
 import { useState, useEffect, use } from "react"
 import { OcrProcessingBankPage } from "@/components/ocr-processing-bank-page"
 import { api } from "@/lib/api"
-import { LocalBankStatement } from "@/lib/types"
+import { BankStatementV2, LocalBankStatement } from "@/lib/types"
 import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 
 interface PageProps {
     params: Promise<{ id: string }>
+}
+
+
+function toLocalStatement(data: BankStatementV2): LocalBankStatement {
+    const normalizedStatus = (() => {
+        const s = (data.status || "").toUpperCase()
+        if (s === "VALIDATED" || s === "VALIDE") return "validated" as const
+        if (s === "TREATED" || s === "TRAITE" || s === "READY_TO_VALIDATE" || s === "PRET_A_VALIDER") return "treated" as const
+        if (s === "PROCESSING" || s === "EN_COURS") return "processing" as const
+        if (s === "ERROR" || s === "ERREUR") return "error" as const
+        return "pending" as const
+    })()
+
+    return {
+        id: data.id,
+        filename: data.originalName || data.filename,
+        originalName: data.originalName || data.filename,
+        filePath: data.filePath || "",
+        fileSize: data.fileSize || 0,
+        fileUrl: data.fileUrl,
+        fields: [],
+        status: normalizedStatus,
+        isProcessing: normalizedStatus === "processing",
+        createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
+        updatedAt: data.updatedAt ? new Date(data.updatedAt) : undefined,
+    }
 }
 
 export default function BankOcrPage({ params }: PageProps) {
@@ -21,7 +47,7 @@ export default function BankOcrPage({ params }: PageProps) {
         const fetchStatement = async () => {
             try {
                 const data = await api.getBankStatementById(Number(id))
-                setStatement(data)
+                setStatement(toLocalStatement(data))
             } catch (error) {
                 console.error("Error fetching bank statement:", error)
             } finally {

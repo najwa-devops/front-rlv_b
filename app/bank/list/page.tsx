@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,9 +11,8 @@ import { UploadBankPage } from "@/components/upload-bank-page"
 import { api } from "@/lib/api"
 import { BankStatementStats, BankStatementV2 } from "@/lib/types"
 import { toast } from "sonner"
-import { getConfiguredBankCodes } from "@/lib/accounting-config-banks"
 
-export default function BankListPage() {
+function BankListPageContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const [loading, setLoading] = useState(true)
@@ -75,9 +74,8 @@ export default function BankListPage() {
     })
 
     const handleUpload = async (files: File[], bankType?: string) => {
-        const configuredBanks = await getConfiguredBankCodes()
-        const effectiveBankType = bankType || configuredBanks[0] || "AUTO"
-        const allowedBanks = configuredBanks
+        const effectiveBankType = bankType || "AUTO"
+        const allowedBanks: string[] = []
 
         for (const file of files) {
             await api.uploadBankStatement(file, effectiveBankType, allowedBanks)
@@ -131,7 +129,7 @@ export default function BankListPage() {
                 )
             )
 
-            const allowedBanks = await getConfiguredBankCodes()
+            const allowedBanks: string[] = []
 
             const updatedStatement = await api.processBankStatement(statement.id, allowedBanks)
             setStatements((prev) =>
@@ -224,5 +222,14 @@ export default function BankListPage() {
                 onReprocess={handleReprocess}
             />
         </div>
+    )
+}
+
+
+export default function BankListPage() {
+    return (
+        <Suspense fallback={<div className="flex h-96 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+            <BankListPageContent />
+        </Suspense>
     )
 }

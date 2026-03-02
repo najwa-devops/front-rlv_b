@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { api } from "@/lib/api"
 import { type BankOption } from "@/lib/types"
-import { resolveBankOptionsFromAccountingConfig } from "@/lib/accounting-config-banks"
 
 interface FileItem {
     file: File
@@ -27,6 +26,8 @@ interface UploadBankPageProps {
 }
 
 export function UploadBankPage({ onUpload, onViewBankStatement, isDemoMode }: UploadBankPageProps) {
+    void onViewBankStatement
+    void isDemoMode
     const [files, setFiles] = useState<FileItem[]>([])
     const [isDragOver, setIsDragOver] = useState(false)
     const [isUploading, setIsUploading] = useState(false)
@@ -38,9 +39,8 @@ export function UploadBankPage({ onUpload, onViewBankStatement, isDemoMode }: Up
             try {
                 const data = await api.getBankOptions()
                 const allOptions = Array.isArray(data.options) ? data.options : []
-                const resolved = await resolveBankOptionsFromAccountingConfig(allOptions)
-                setSupportedBanks(resolved)
-                setSelectedBank(resolved[0]?.code || "AUTO")
+                setSupportedBanks(allOptions)
+                setSelectedBank(allOptions[0]?.code || "AUTO")
             } catch (error) {
                 console.error("Error fetching bank options", error)
                 setSupportedBanks([{ code: "AUTO", label: "Détection Automatique", mappedTo: "AUTO" }])
@@ -71,13 +71,16 @@ export function UploadBankPage({ onUpload, onViewBankStatement, isDemoMode }: Up
         const fileArray = Array.from(newFiles)
         const newFileItems: FileItem[] = fileArray.map((file) => {
             const error = validateFile(file)
-            return {
+            const item: FileItem = {
                 file,
                 id: `${file.name}-${Date.now()}-${Math.random()}`,
                 status: error ? "error" : "pending",
                 progress: 0,
-                error: error || undefined,
             }
+            if (error) {
+                item.error = error
+            }
+            return item
         })
         setFiles((prev) => [...prev, ...newFileItems])
     }, [])
@@ -128,13 +131,8 @@ export function UploadBankPage({ onUpload, onViewBankStatement, isDemoMode }: Up
       // Envoyer tout le lot en une seule fois côté page parent.
       // Evite de naviguer dès le 1er fichier et d'interrompre le reste.
       await onUpload(validFiles.map((f) => f.file), selectedBank)
-      setFiles((prev) =>
-        prev.map((f) =>
-          validFiles.some((vf) => vf.id === f.id)
-            ? { ...f, status: "success", progress: 100 }
-            : f
-        )
-      )
+      // Nettoyer la zone upload dès que les fichiers sont bien enregistrés en backend.
+      setFiles([])
     } catch (err) {
       setFiles((prev) =>
         prev.map((f) =>

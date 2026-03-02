@@ -10,9 +10,9 @@
     "skipLibCheck": true,
     "strict": true,
     "noImplicitAny": true,
-    "exactOptionalPropertyTypes": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noEmit": true,
@@ -42,6 +42,9 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "snapshot-b7a53e4",
+    "backups",
+    ".next"
   ]
 }

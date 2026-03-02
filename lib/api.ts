@@ -5,14 +5,13 @@ import {
   Tier,
   CreateTierRequest,
   UpdateTierRequest,
-  LocalBankStatement,
   BankStatementV2,
   BankTransactionV2,
   BankStatementStats,
   BankOption
 } from "./types"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8089"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8096"
 
 type ApiEnvelope<T> = {
   success: boolean
@@ -342,6 +341,37 @@ export async function getAccountingConfigBanks(): Promise<string[]> {
   return data.banks || []
 }
 
+export async function generateAccountingFromXmlUrl(xmlUrl: string, nmois: number, year?: number): Promise<any> {
+  const response = await apiFetch(`${API_BASE_URL}/api/v2/accounting/generate-from-xml-url`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ xmlUrl, nmois, year }),
+  })
+  if (!response.ok) throw new Error(await parseApiError(response))
+  return response.json()
+}
+
+
+export async function simulateComptabilisation(statementId: number): Promise<any> {
+  const response = await apiFetch(`${API_BASE_URL}/api/comptabilisation/simulate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ statementId }),
+  })
+  if (!response.ok) throw new Error(await parseApiError(response))
+  return response.json()
+}
+
+export async function confirmComptabilisation(simulationId: string, userId?: string): Promise<any> {
+  const response = await apiFetch(`${API_BASE_URL}/api/comptabilisation/confirm`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ simulationId, userId, confirmed: true }),
+  })
+  if (!response.ok) throw new Error(await parseApiError(response))
+  return response.json()
+}
+
 // ============================================
 // BANK STATEMENTS API
 // ============================================
@@ -414,11 +444,13 @@ export async function getBankStatementById(id: number): Promise<BankStatementV2>
 }
 
 export async function validateBankStatement(id: number, fields?: any): Promise<BankStatementV2> {
-  const response = await apiFetch(`${API_BASE_URL}/api/v2/bank-statements/${id}/validate`, {
-    method: "POST",
-    headers: fields ? { "Content-Type": "application/json" } : undefined,
-    body: fields ? JSON.stringify(fields) : undefined,
-  })
+  const init: RequestInit = { method: "POST" }
+  if (fields !== undefined && fields !== null) {
+    init.headers = { "Content-Type": "application/json" }
+    init.body = JSON.stringify(fields)
+  }
+
+  const response = await apiFetch(`${API_BASE_URL}/api/v2/bank-statements/${id}/validate`, init)
   if (!response.ok) throw new Error(await parseApiError(response))
   return response.json()
 }
@@ -621,6 +653,9 @@ export const api = {
   updateAccountingConfig,
   deleteAccountingConfig,
   getAccountingConfigBanks,
+  generateAccountingFromXmlUrl,
+  simulateComptabilisation,
+  confirmComptabilisation,
 
   // Bank Statements
   uploadBankStatement,

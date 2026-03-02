@@ -43,6 +43,16 @@ import {
 } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
     Loader2,
     FileText,
     AlertCircle,
@@ -53,6 +63,7 @@ import {
     Eye,
     Link as LinkIcon,
     CheckCircle2,
+    Calculator,
 } from "lucide-react"
 import type { Account, BankStatementV2, BankTransactionV2 } from "@/lib/types"
 import { api } from "@/lib/api"
@@ -146,6 +157,12 @@ export function BankStatementDetailModal({
     const [editableTransactions, setEditableTransactions] = useState<BankTransactionV2[]>([])
     const [loading, setLoading] = useState(false)
     const [saving, setSaving] = useState(false)
+    const [showAccountingModal, setShowAccountingModal] = useState(false)
+    const [accountingLoading, setAccountingLoading] = useState(false)
+    const [confirmLoading, setConfirmLoading] = useState(false)
+    const [showConfirmAccountingDialog, setShowConfirmAccountingDialog] = useState(false)
+    const [simulationResult, setSimulationResult] = useState<any | null>(null)
+    const [accountingConfirmed, setAccountingConfirmed] = useState(false)
     const [accounts, setAccounts] = useState<Account[]>([])
     const [loadingAccounts, setLoadingAccounts] = useState(false)
     const [localStatement, setLocalStatement] = useState<BankStatementV2 | null>(null)
@@ -197,7 +214,7 @@ export function BankStatementDetailModal({
     }, [open])
 
     const loadFullData = async (id: number, silent = false): Promise<BankStatementV2 | null> => {
-        if (!id) return
+        if (!id) return null
         if (!silent) setLoading(true)
         try {
             const data = await api.getBankStatementById(id)
@@ -412,10 +429,10 @@ export function BankStatementDetailModal({
         }
         const merged = sortByIndex([...editableTransactions, localTx])
         setEditableTransactions(merged)
-        setNewTransaction((prev) => ({
+        setNewTransaction({
             ...EMPTY_NEW_TRANSACTION,
             transactionIndex: Math.max(merged.length + 1, 1),
-        }))
+        })
         toast.success("Transaction prête à être enregistrée")
     }
 
@@ -465,7 +482,7 @@ export function BankStatementDetailModal({
         try {
             const existingPromises = existingRows.map((tx) => {
                 const payload: Partial<BankTransactionV2> = {
-                    transactionIndex: tx.transactionIndex,
+                    transactionIndex: tx.transactionIndex ?? 0,
                     dateOperation: tx.dateOperation,
                     dateValeur: tx.dateValeur,
                     compte: isSelectedCompte(tx.compte) ? tx.compte : "",
@@ -481,7 +498,7 @@ export function BankStatementDetailModal({
             const localPromises = localRows.map((tx) => {
                 return api.createBankTransaction({
                     statementId: tx.statementId,
-                    transactionIndex: tx.transactionIndex,
+                    transactionIndex: tx.transactionIndex ?? 0,
                     dateOperation: tx.dateOperation,
                     dateValeur: tx.dateValeur,
                     libelle: tx.libelle,
@@ -504,7 +521,9 @@ export function BankStatementDetailModal({
                 createdRows.forEach(onUpdateTransaction)
             }
 
-            await loadFullData(localStatement.id, true)
+            if (localStatement) {
+                await loadFullData(localStatement.id, true)
+            }
             toast.success("Modifications enregistrées")
         } catch (error) {
             console.error("Error saving transactions:", error)
@@ -513,6 +532,57 @@ export function BankStatementDetailModal({
             setSaving(false)
         }
     }
+    const simulateComptabilisation = async () => {
+        if (!localStatement) return
+
+        setAccountingLoading(true)
+        setAccountingConfirmed(false)
+        try {
+            const result = await api.simulateComptabilisation(localStatement.id)
+            setSimulationResult(result)
+            toast.success("Simulation de comptabilisation prête")
+        } catch (error) {
+            console.error("Error simulation comptabilisation:", error)
+            toast.error(error instanceof Error ? error.message : "Erreur lors de la simulation")
+            setSimulationResult(null)
+        } finally {
+            setAccountingLoading(false)
+        }
+    }
+
+    const confirmComptabilisation = async () => {
+        if (!simulationResult?.simulationId || !localStatement) return
+
+        setConfirmLoading(true)
+        try {
+            await api.confirmComptabilisation(simulationResult.simulationId)
+            setAccountingConfirmed(true)
+            const refreshed = await loadFullData(localStatement.id, true)
+            if (refreshed) setLocalStatement(refreshed)
+            toast.success("Comptabilisation confirmée avec succès")
+        } catch (error) {
+            console.error("Error confirm comptabilisation:", error)
+            toast.error(error instanceof Error ? error.message : "Erreur lors de la confirmation")
+        } finally {
+            setConfirmLoading(false)
+        }
+    }
+
+    const askConfirmComptabilisation = () => {
+        if (!simulationResult?.simulationId || !localStatement) return
+        setShowConfirmAccountingDialog(true)
+    }
+
+    useEffect(() => {
+        if (!showAccountingModal) {
+            setSimulationResult(null)
+            setAccountingConfirmed(false)
+            return
+        }
+        if (localStatement) {
+            void simulateComptabilisation()
+        }
+    }, [showAccountingModal, localStatement?.id])
 
     const selectedNewTransactionAccount = accounts.find((account) => account.code === newTransaction.compte) || null
     if (!localStatement) return null
@@ -1002,6 +1072,10 @@ export function BankStatementDetailModal({
                     </div>
                     {!isAccounted && (
                         <div className="flex items-center gap-2">
+                            <Button size="sm" variant="outline" className="gap-2" onClick={() => setShowAccountingModal(true)} disabled={saving || accountingLoading || confirmLoading}>
+                                <Calculator className="h-4 w-4" />
+                                Comptabiliser
+                            </Button>
                             <Button size="sm" className="gap-2" onClick={handleSaveAll} disabled={!hasChanges || saving}>
                                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                                 Enregistrer
@@ -1010,6 +1084,113 @@ export function BankStatementDetailModal({
                     )}
                 </div>
             </DialogContent>
+            <Dialog open={showAccountingModal} onOpenChange={setShowAccountingModal}>
+                <DialogContent className="max-w-[95vw] sm:max-w-5xl">
+                    <DialogHeader>
+                        <DialogTitle>Simulation de Comptabilisation</DialogTitle>
+                        <DialogDescription>
+                            Chaque transaction du relevé est transformée automatiquement en 2 écritures comptables.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4">
+                        {(accountingLoading || confirmLoading) ? (
+                            <div className="rounded-md border bg-muted/30 p-4 flex items-center gap-2 text-sm text-muted-foreground">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                {accountingLoading ? "Simulation en cours..." : "Confirmation en cours..."}
+                            </div>
+                        ) : null}
+
+                        {simulationResult?.entries?.length ? (
+                            <div className="rounded-md border overflow-hidden">
+                                <div className="max-h-[55vh] overflow-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow className="bg-muted/40">
+                                                <TableHead>Numero</TableHead>
+                                                <TableHead>Mois</TableHead>
+                                                <TableHead>Date</TableHead>
+                                                <TableHead>Journal</TableHead>
+                                                <TableHead>N° Compte</TableHead>
+                                                <TableHead>Libellé</TableHead>
+                                                <TableHead className="text-right">Débit</TableHead>
+                                                <TableHead className="text-right">Crédit</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {simulationResult.entries.map((row: any, index: number) => (
+                                                <TableRow key={`${row.numero}-${index}`} className={row.counterpart ? "bg-muted/30" : ""}>
+                                                    <TableCell className="font-mono text-xs">{row.numero}</TableCell>
+                                                    <TableCell>{row.moisTexte} ({row.nmoisTexte})</TableCell>
+                                                    <TableCell>{row.dateOperation ? new Date(row.dateOperation).toLocaleDateString("fr-FR") : "-"}</TableCell>
+                                                    <TableCell>{row.journal}</TableCell>
+                                                    <TableCell className="font-mono">{row.ncompte}</TableCell>
+                                                    <TableCell className="max-w-[280px] truncate" title={row.libelle}>{row.libelle || "-"}</TableCell>
+                                                    <TableCell className="text-right text-red-600">{Number(row.debit || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                                    <TableCell className="text-right text-emerald-600">{Number(row.credit || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </div>
+                        ) : (
+                            !accountingLoading && (
+                                <div className="rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground">
+                                    Aucune écriture simulée pour ce relevé.
+                                </div>
+                            )
+                        )}
+                    </div>
+
+                    <div className="mt-2 flex justify-end gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowAccountingModal(false)}
+                            disabled={accountingLoading || confirmLoading}
+                        >
+                            Fermer
+                        </Button>
+                        <Button
+                            onClick={askConfirmComptabilisation}
+                            disabled={
+                                accountingLoading ||
+                                confirmLoading ||
+                                accountingConfirmed ||
+                                !simulationResult?.simulationId ||
+                                !(simulationResult?.entries?.length > 0)
+                            }
+                        >
+                            {confirmLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Calculator className="h-4 w-4" />}
+                            {accountingConfirmed ? "Comptabilisé" : "Confirmer Comptabilisation"}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <AlertDialog open={showConfirmAccountingDialog} onOpenChange={setShowConfirmAccountingDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Confirmation de comptabilisation</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Etes-vous sur de vouloir confirmer cette comptabilisation ?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={confirmLoading}>Annuler</AlertDialogCancel>
+                        <AlertDialogAction
+                            disabled={confirmLoading}
+                            onClick={(e) => {
+                                e.preventDefault()
+                                setShowConfirmAccountingDialog(false)
+                                void confirmComptabilisation()
+                            }}
+                        >
+                            Oui, je confirme
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </Dialog>
     )
 }

@@ -77,7 +77,7 @@ export function ValidatedBankStatementsPage({
                     statements={statements}
                     onView={onView}
                     onDelete={onDelete}
-                    onMarkAsAccounted={onMarkAsAccounted}
+                    {...(onMarkAsAccounted ? { onMarkAsAccounted } : {})}
                 />
             ) : (
                 <Card className="border-border/50">
