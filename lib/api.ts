@@ -11,7 +11,8 @@ import {
   BankOption
 } from "./types"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8096"
+const RAW_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ""
+const API_BASE_URL = RAW_API_BASE_URL.replace(/\/$/, "") === "/api" ? "" : RAW_API_BASE_URL.replace(/\/$/, "")
 
 type ApiEnvelope<T> = {
   success: boolean

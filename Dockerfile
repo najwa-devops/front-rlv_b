@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Installer les dépendances
-RUN npm ci --only=production && \
+RUN npm ci && \
     npm cache clean --force
 
 # Stage 2: Build de l'application
@@ -22,8 +22,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Variables d'environnement pour le build
-ARG NEXT_PUBLIC_API_URL=http://localhost:8089
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ARG API_PROXY_TARGET=http://host.docker.internal:8096
+ENV NEXT_PUBLIC_API_URL=/api
+ENV API_PROXY_TARGET=$API_PROXY_TARGET
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build de Next.js
