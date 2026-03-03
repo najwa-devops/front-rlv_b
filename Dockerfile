@@ -1,42 +1,62 @@
+# Stage 1: Installation des dépendances
 FROM node:20-alpine AS deps
 
 WORKDIR /app
 
+# Copier package.json et package-lock.json
 COPY package*.json ./
-RUN npm ci
 
+# Installer les dépendances
+RUN npm ci && \
+    npm cache clean --force
+
+# Stage 2: Build de l'application
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-ARG NEXT_PUBLIC_API_URL=http://localhost:8096
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-ENV NEXT_TELEMETRY_DISABLED=1
-
+# Copier les dépendances depuis deps
 COPY --from=deps /app/node_modules ./node_modules
+
+# Copier tout le code source
 COPY . .
 
+# Variables d'environnement pour le build
+ARG API_PROXY_TARGET=http://host.docker.internal:8096
+ENV NEXT_PUBLIC_API_URL=/api
+ENV API_PROXY_TARGET=$API_PROXY_TARGET
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Build de Next.js
 RUN npm run build
 
+# Stage 3: Image de production
 FROM node:20-alpine AS runner
 
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=3022
-ENV HOSTNAME=0.0.0.0
 
-COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+# Créer un utilisateur non-root
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/.next ./.next
+# Copier les fichiers nécessaires depuis builder
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.mjs ./next.config.mjs
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-EXPOSE 3022
+USER nextjs
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=5 \
-  CMD wget -qO- http://127.0.0.1:3022/login >/dev/null || exit 1
+EXPOSE 3000
 
-CMD ["npm", "run", "start", "--", "-p", "3022", "-H", "0.0.0.0"]
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" || exit 1
+
+# Démarrer l'application
+CMD ["node", "server.js"]
