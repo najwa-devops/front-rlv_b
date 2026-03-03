@@ -1,0 +1,12 @@
+.git
+.gitignore
+.next
+node_modules
+npm-debug.log
+Dockerfile*
+docker-compose*
+backups
+snapshot-b7a53e4
+*.log
+*.tar.gz
+tsconfig.tsbuildinfo
