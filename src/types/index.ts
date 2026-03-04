@@ -94,53 +94,6 @@ export interface UpdateAccountRequest {
     taxCode?: string;
 }
 
-export interface Tier {
-    id: number;
-    libelle: string;
-    auxiliaireMode: boolean;
-    tierNumber: string;
-    collectifAccount?: string;
-    displayAccount?: string;
-    ifNumber?: string;
-    ice?: string;
-    rcNumber?: string;
-    defaultChargeAccount?: string;
-    tvaAccount?: string;
-    defaultTvaRate?: number;
-    active: boolean;
-    hasAccountingConfig?: boolean;
-    createdAt?: string;
-    updatedAt?: string;
-}
-
-export interface CreateTierRequest {
-    libelle: string;
-    auxiliaireMode: boolean;
-    tierNumber: string;
-    collectifAccount?: string;
-    ifNumber?: string;
-    ice?: string;
-    rcNumber?: string;
-    defaultChargeAccount?: string;
-    tvaAccount?: string;
-    defaultTvaRate?: number;
-    active?: boolean;
-}
-
-export interface UpdateTierRequest {
-    libelle?: string;
-    tierNumber?: string;
-    collectifAccount?: string;
-    ifNumber?: string;
-    ice?: string;
-    rcNumber?: string;
-    defaultChargeAccount?: string;
-    tvaAccount?: string;
-    defaultTvaRate?: number;
-    taxCode?: string;
-    active?: boolean;
-}
-
 // ============================================
 // BANK STATEMENT TYPES
 // ============================================

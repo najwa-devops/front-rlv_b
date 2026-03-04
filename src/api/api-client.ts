@@ -36,13 +36,6 @@ const apiClient: AxiosInstance = axios.create({
 // Request Interceptor
 apiClient.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
-        if (typeof window !== 'undefined') {
-            const token = localStorage.getItem('token');
-            if (token) {
-                config.headers.Authorization = `Bearer ${token}`;
-            }
-        }
-
         logger.debug(`API Request: ${config.method?.toUpperCase()} ${config.url}`, {
             params: config.params,
         });
@@ -81,16 +74,6 @@ apiClient.interceptors.response.use(
             logger.warn(`API Warning: backend unavailable for ${url}`);
         } else {
             logger.error(`API Error: ${status || 'Unknown'} ${url}`, error.response?.data);
-        }
-
-        if (status === 401) {
-            logger.warn('Unauthorized access detected. Redirecting to login.');
-            if (typeof window !== 'undefined') {
-                localStorage.removeItem('token');
-                if (!window.location.pathname.startsWith('/login')) {
-                    window.location.href = '/login';
-                }
-            }
         }
 
         const apiResponse = error.response?.data as any;

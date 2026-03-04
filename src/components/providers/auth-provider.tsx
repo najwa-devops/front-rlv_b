@@ -1,8 +1,7 @@
 'use client';
 
-import { createContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { AuthService } from '@/src/api/services/auth.service';
-import { User, LoginRequest } from '@/src/types';
+import { createContext, useMemo, ReactNode } from 'react';
+import { User } from '@/src/types';
 
 interface AuthContextType {
     user: User | null;
@@ -16,58 +15,27 @@ interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [authenticated, setAuthenticated] = useState(false);
+    const user = useMemo<User>(
+        () => ({
+            id: 0,
+            email: 'local@no-auth',
+            name: 'Local User',
+            role: 'SUPER_ADMIN',
+            active: true,
+        }),
+        []
+    );
 
-    const fetchUser = useCallback(async () => {
-        try {
-            // Dans le fournisseur, on ne met loading=true que si on n'a pas déjà de données
-            // ou si on veut forcer un reload.
-            if (AuthService.isAuthenticated()) {
-                const userData = await AuthService.me();
-                setUser(userData);
-                setAuthenticated(true);
-            } else {
-                setUser(null);
-                setAuthenticated(false);
-            }
-        } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            if (!message.toLowerCase().includes('unable to fetch current user')) {
-                console.error('Authentication check failed', error);
-            }
-            setUser(null);
-            setAuthenticated(false);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+    const loading = false;
+    const authenticated = true;
 
-    useEffect(() => {
-        fetchUser();
-    }, [fetchUser]);
-
-    const login = async (email: string, password?: string) => {
-        setLoading(true);
-        try {
-            const request: LoginRequest = { email };
-            if (password !== undefined) {
-                request.password = password;
-            }
-            const response = await AuthService.login(request);
-            setUser(response.user);
-            setAuthenticated(true);
-        } finally {
-            setLoading(false);
-        }
-    };
-
+    const login = async (_email: string, _password?: string) => Promise.resolve();
     const logout = () => {
-        AuthService.logout();
-        setUser(null);
-        setAuthenticated(false);
+        if (typeof window !== 'undefined') {
+            window.location.href = '/bank/list';
+        }
     };
+    const refreshUser = async () => Promise.resolve();
 
     return (
         <AuthContext.Provider value={{
@@ -76,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             authenticated,
             login,
             logout,
-            refreshUser: fetchUser
+            refreshUser
         }}>
             {children}
         </AuthContext.Provider>

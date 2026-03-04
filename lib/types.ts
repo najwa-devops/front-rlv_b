@@ -50,64 +50,6 @@ export interface UpdateAccountRequest {
 // TIER (FOURNISSEUR)
 // ============================================
 
-export interface Tier {
-  id: number;
-  libelle: string;
-
-  // Mode Auxiliaire
-  auxiliaireMode: boolean;
-  tierNumber: string;
-  collectifAccount?: string | undefined;
-  displayAccount?: string | undefined;
-
-  // Identifiants Fiscaux
-  ifNumber?: string | undefined;
-  ice?: string | undefined;
-  rcNumber?: string | undefined;
-
-  // Config Comptable
-  defaultChargeAccount?: string | undefined;
-  tvaAccount?: string | undefined;
-  defaultTvaRate?: number | undefined;
-  taxCode?: string | undefined;
-
-  active: boolean;
-  hasAccountingConfig?: boolean | undefined;
-  hasTvaConfiguration?: boolean | undefined;
-  tvaDisplayFormat?: string | undefined;
-
-  createdAt?: string | undefined;
-  updatedAt?: string | undefined;
-}
-
-export interface CreateTierRequest {
-  libelle: string;
-  auxiliaireMode: boolean;
-  tierNumber: string;
-  collectifAccount?: string | undefined;
-  ifNumber?: string | undefined;
-  ice?: string | undefined;
-  rcNumber?: string | undefined;
-  defaultChargeAccount?: string | undefined;
-  tvaAccount?: string | undefined;
-  defaultTvaRate?: number | undefined;
-  active?: boolean | undefined;
-}
-
-export interface UpdateTierRequest {
-  libelle?: string | undefined;
-  tierNumber?: string | undefined;
-  collectifAccount?: string | undefined;
-  ifNumber?: string | undefined;
-  ice?: string | undefined;
-  rcNumber?: string | undefined;
-  defaultChargeAccount?: string | undefined;
-  tvaAccount?: string | undefined;
-  defaultTvaRate?: number | undefined;
-  taxCode?: string | undefined;
-  active?: boolean | undefined;
-}
-
 // ============================================
 // TYPES RELEVÉ BANCAIRE
 // ============================================

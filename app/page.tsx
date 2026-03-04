@@ -7,12 +7,12 @@ export default function Home() {
   const router = useRouter()
 
   useEffect(() => {
-    router.replace("/login")
+    router.replace("/bank/list")
   }, [router])
 
   return (
     <div className="flex items-center justify-center h-screen">
-      <div className="animate-pulse text-muted-foreground">Redirection vers la connexion banking...</div>
+      <div className="animate-pulse text-muted-foreground">Redirection vers la liste des relevés...</div>
     </div>
   )
 }

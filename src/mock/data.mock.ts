@@ -1,5 +1,5 @@
 import { Dossier, ComptableUser, AuditLog } from "@/src/types/dossier"
-import { Account, Tier, User } from "@/src/types"
+import { Account, User } from "@/src/types"
 
 // flag global pour forcer le mode mock statique
 export const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
@@ -253,38 +253,6 @@ export const MOCK_ACCOUNTS: Account[] = [
     { id: 4, code: "441100000", libelle: "Fournisseurs", active: true, classe: 4 },
     { id: 5, code: "445500000", libelle: "État - TVA facturée", active: true, classe: 4 },
     { id: 6, code: "711100000", libelle: "Ventes de marchandises", active: true, classe: 7 },
-]
-
-// ============================================
-// MOCK TIERS
-// ============================================
-export const MOCK_TIERS: Tier[] = [
-    {
-        id: 10,
-        libelle: "Maroc Tech SARL",
-        tierNumber: "44110010",
-        ice: "001234567890012",
-        ifNumber: "98765432",
-        active: true,
-        hasAccountingConfig: true,
-        defaultChargeAccount: "611100000",
-        tvaAccount: "345500000",
-        defaultTvaRate: 20,
-        auxiliaireMode: true
-    },
-    {
-        id: 11,
-        libelle: "Imprimerie Atlas",
-        tierNumber: "44110011",
-        ice: "002233445566778",
-        ifNumber: "11223344",
-        active: true,
-        hasAccountingConfig: true,
-        defaultChargeAccount: "611100000",
-        tvaAccount: "345500000",
-        defaultTvaRate: 20,
-        auxiliaireMode: true
-    }
 ]
 
 // ============================================

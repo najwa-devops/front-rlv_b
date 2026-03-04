@@ -2,9 +2,6 @@ import {
   Account,
   CreateAccountRequest,
   UpdateAccountRequest,
-  Tier,
-  CreateTierRequest,
-  UpdateTierRequest,
   BankStatementV2,
   BankTransactionV2,
   BankOption
@@ -36,13 +33,6 @@ export type UpsertAccountingConfigRequest = Omit<AccountingConfigDto, "id">
 
 async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const headers = new Headers(init?.headers)
-
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("token")
-    if (token && !headers.has("Authorization")) {
-      headers.set("Authorization", `Bearer ${token}`)
-    }
-  }
 
   const response = await fetch(input, { ...init, headers })
 
@@ -209,91 +199,6 @@ export async function importAccounts(requests: CreateAccountRequest[]): Promise<
   })
   if (!response.ok) throw new Error(await parseApiError(response))
   return response.json()
-}
-
-// ============================================
-// ACCOUNTING: TIERS
-// ============================================
-
-export async function getAllTiers(activeOnly: boolean = true): Promise<Tier[]> {
-  const response = await apiFetch(`${API_BASE_URL}/api/accounting/tiers?activeOnly=${activeOnly}`)
-  if (!response.ok) throw new Error(await parseApiError(response))
-  const data = await response.json()
-  return data.tiers || []
-}
-
-export async function getTierById(id: number): Promise<Tier> {
-  const response = await apiFetch(`${API_BASE_URL}/api/accounting/tiers/${id}`)
-  if (!response.ok) throw new Error(await parseApiError(response))
-  const data = await response.json()
-  return data.tier
-}
-
-export async function getTierByTierNumber(tierNumber: string): Promise<Tier | null> {
-  const response = await apiFetch(`${API_BASE_URL}/api/accounting/tiers/by-tier-number/${tierNumber}`)
-  if (response.status === 404) return null
-  if (!response.ok) throw new Error(await parseApiError(response))
-  const data = await response.json()
-  return data.tier
-}
-
-export async function getTierByIce(ice: string): Promise<Tier | null> {
-  const response = await apiFetch(`${API_BASE_URL}/api/accounting/tiers/search?query=${encodeURIComponent(ice)}`)
-  if (!response.ok) throw new Error(await parseApiError(response))
-  const data = await response.json()
-  const tiers: Tier[] = data.tiers || []
-  const normalized = String(ice || "").replace(/\s+/g, "")
-  const exact = tiers.find((t) => String(t.ice || "").replace(/\s+/g, "") === normalized)
-  return exact || null
-}
-
-export async function getTierByIfNumber(ifNumber: string): Promise<Tier | null> {
-  const response = await apiFetch(`${API_BASE_URL}/api/accounting/tiers/search?query=${encodeURIComponent(ifNumber)}`)
-  if (!response.ok) throw new Error(await parseApiError(response))
-  const data = await response.json()
-  const tiers: Tier[] = data.tiers || []
-  const normalized = String(ifNumber || "").replace(/\s+/g, "")
-  const exact = tiers.find((t) => String(t.ifNumber || "").replace(/\s+/g, "") === normalized)
-  return exact || null
-}
-
-export async function searchTiers(query: string): Promise<Tier[]> {
-  const response = await apiFetch(`${API_BASE_URL}/api/accounting/tiers/search?query=${encodeURIComponent(query)}`)
-  if (!response.ok) throw new Error(await parseApiError(response))
-  const data = await response.json()
-  return data.tiers || []
-}
-
-export async function createTier(request: CreateTierRequest): Promise<Tier> {
-  const response = await apiFetch(`${API_BASE_URL}/api/accounting/tiers`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(request),
-  })
-  if (!response.ok) throw new Error(await parseApiError(response))
-  const data = await response.json()
-  return data.tier
-}
-
-export async function updateTier(id: number, request: UpdateTierRequest): Promise<Tier> {
-  const response = await apiFetch(`${API_BASE_URL}/api/accounting/tiers/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(request),
-  })
-  if (!response.ok) throw new Error(await parseApiError(response))
-  const data = await response.json()
-  return data.tier
-}
-
-export async function deactivateTier(id: number): Promise<void> {
-  const response = await apiFetch(`${API_BASE_URL}/api/accounting/tiers/${id}`, { method: "DELETE" })
-  if (!response.ok) throw new Error(await parseApiError(response))
-}
-
-export async function activateTier(id: number): Promise<void> {
-  const response = await apiFetch(`${API_BASE_URL}/api/accounting/tiers/${id}/activate`, { method: "PATCH" })
-  if (!response.ok) throw new Error(await parseApiError(response))
 }
 
 // ============================================
@@ -624,20 +529,6 @@ export const api = {
   getChargeAccounts,
   getTvaAccounts,
   getFournisseurAccounts,
-
-  // Accounting - Tiers
-  getTiers: getAllTiers,
-  getAllTiers,
-  getTierById,
-  getTierByTierNumber,
-  getTierByIfNumber,
-  getTierByIce,
-  searchTiers,
-  createTier,
-  updateTier,
-  deactivateTier,
-  activateTier,
-
   // Accounting - Configs
   getAccountingConfigs,
   createAccountingConfig,

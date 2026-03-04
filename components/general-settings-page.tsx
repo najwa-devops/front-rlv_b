@@ -41,7 +41,7 @@ export function GeneralSettingsPage() {
                             </div>
                             <div>
                                 <CardTitle>Logique Métier - Comptabilité</CardTitle>
-                                <CardDescription>Configurez comment le système gère les écritures et les tiers.</CardDescription>
+                                <CardDescription>Configurez comment le système gère les écritures et les comptes.</CardDescription>
                             </div>
                         </div>
                     </CardHeader>
@@ -50,7 +50,7 @@ export function GeneralSettingsPage() {
                             <div className="space-y-1">
                                 <Label htmlFor="global-aux-mode" className="text-base font-semibold">Mode Auxiliaire par défaut</Label>
                                 <p className="text-sm text-muted-foreground max-w-md">
-                                    Si activé, les nouveaux tiers seront créés en mode auxiliaire (Collectif + Numéro) par défaut.
+                                    Si activé, les nouvelles écritures utiliseront la logique de compte par défaut définie localement.
                                 </p>
                             </div>
                             <Switch
@@ -66,7 +66,7 @@ export function GeneralSettingsPage() {
                             <div className="space-y-1">
                                 <Label className="text-base font-semibold">Validation automatique des ICE</Label>
                                 <p className="text-sm text-muted-foreground max-w-md">
-                                    Vérifier la validité des ICE via l'API nationale lors de la création d'un tier.
+                                    Vérifier la validité des ICE via l'API nationale lors de la création d'une écriture.
                                 </p>
                             </div>
                             <Switch disabled id="auto-validate-ice" />
