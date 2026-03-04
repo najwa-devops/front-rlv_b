@@ -143,52 +143,56 @@ export function AccountingConfigurationPage({ embedded = false }: AccountingConf
                         Ajouter
                     </Button>
                 </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Journal</TableHead>
-                                <TableHead>Designation</TableHead>
-                                <TableHead>Banque</TableHead>
-                                <TableHead>Compte comptable</TableHead>
-                                <TableHead>RIB</TableHead>
-                                <TableHead>TTC</TableHead>
-                                <TableHead className="text-right">Action</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {accountingConfigs.map((row) => (
-                                <TableRow key={row.id}>
-                                    <TableCell>{row.journal}</TableCell>
-                                    <TableCell>{row.designation}</TableCell>
-                                    <TableCell>{row.banque}</TableCell>
-                                    <TableCell className="font-mono">{row.compteComptable}</TableCell>
-                                    <TableCell className="font-mono">{row.rib}</TableCell>
-                                    <TableCell>{row.ttcEnabled ? "Oui" : "Non"}</TableCell>
-                                    <TableCell className="text-right flex justify-end gap-1">
-                                        <Button size="icon" variant="ghost" onClick={() => openEdit(row)}>
-                                            <Pencil className="h-4 w-4" />
-                                        </Button>
-                                        <Button size="icon" variant="ghost" onClick={() => handleDelete(row.id)}>
-                                            <Trash2 className="h-4 w-4 text-red-500" />
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {accountingConfigs.length === 0 && (
+                <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-center text-muted-foreground">
-                                        Aucune configuration comptable
-                                    </TableCell>
+                                    <TableHead>Journal</TableHead>
+                                    <TableHead>Designation</TableHead>
+                                    <TableHead className="hidden sm:table-cell">Banque</TableHead>
+                                    <TableHead className="hidden md:table-cell">Compte comptable</TableHead>
+                                    <TableHead className="hidden lg:table-cell">RIB</TableHead>
+                                    <TableHead className="hidden sm:table-cell">TTC</TableHead>
+                                    <TableHead className="text-right">Action</TableHead>
                                 </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {accountingConfigs.map((row) => (
+                                    <TableRow key={row.id}>
+                                        <TableCell>{row.journal}</TableCell>
+                                        <TableCell>{row.designation}</TableCell>
+                                        <TableCell className="hidden sm:table-cell">{row.banque}</TableCell>
+                                        <TableCell className="font-mono hidden md:table-cell">{row.compteComptable}</TableCell>
+                                        <TableCell className="font-mono hidden lg:table-cell">{row.rib}</TableCell>
+                                        <TableCell className="hidden sm:table-cell">{row.ttcEnabled ? "Oui" : "Non"}</TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex justify-end gap-1">
+                                                <Button size="icon" variant="ghost" onClick={() => openEdit(row)}>
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                                <Button size="icon" variant="ghost" onClick={() => handleDelete(row.id)}>
+                                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                                {accountingConfigs.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={7} className="text-center text-muted-foreground">
+                                            Aucune configuration comptable
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </CardContent>
             </Card>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="w-[98vw] max-w-[98vw] sm:max-w-2xl overflow-y-auto max-h-[95vh]">
                     <DialogHeader>
                         <DialogTitle>
                             {editingConfig ? "Modifier la configuration comptable" : "Ajouter une configuration comptable"}

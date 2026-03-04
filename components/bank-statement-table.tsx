@@ -40,7 +40,6 @@ interface BankStatementTableProps {
 export function BankStatementTable({ statements, onView, onDelete, onValidate, onMarkAsAccounted, onReprocess, onSave }: BankStatementTableProps) {
     void onView
     void onSave
-    // Initialiser les états de "Lier" à partir des données backend si disponibles
     const initialLinked = useMemo(() => {
         const linked: Record<number, boolean> = {};
         statements.forEach(s => {
@@ -55,7 +54,6 @@ export function BankStatementTable({ statements, onView, onDelete, onValidate, o
     const [selectedStatement, setSelectedStatement] = useState<BankStatementV2 | null>(null)
     const [isModalOpen, setIsModalOpen] = useState(false)
 
-    // Mettre à jour si les statements changent
     useEffect(() => {
         setLinkedStatements(prev => ({ ...prev, ...initialLinked }));
     }, [initialLinked]);
@@ -125,20 +123,89 @@ export function BankStatementTable({ statements, onView, onDelete, onValidate, o
         return getStatusBadge(statement.status);
     }
 
+    const renderActions = (statement: BankStatementV2) => (
+        <div className="flex items-center gap-1">
+            <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-primary hover:bg-primary/10"
+                onClick={() => handleViewDetails(statement)}
+                title="Détails"
+            >
+                <Eye className="h-4 w-4" />
+            </Button>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-36">
+                    {(statement.status === "TREATED" || statement.status === "READY_TO_VALIDATE" || statement.status === "TRAITE" || statement.status === "PRET_A_VALIDER") && onValidate && (
+                        <DropdownMenuItem className="text-emerald-600 gap-2" onClick={() => onValidate(statement.id)}>
+                            <CheckCircle2 className="h-4 w-4" /> Valider
+                        </DropdownMenuItem>
+                    )}
+                    {(statement.status === "VALIDATED" || statement.status === "VALIDE") && onMarkAsAccounted && (
+                        <DropdownMenuItem className="text-violet-700 gap-2" onClick={() => onMarkAsAccounted(statement.id)}>
+                            <CheckCircle2 className="h-4 w-4" /> Comptabiliser
+                        </DropdownMenuItem>
+                    )}
+                    {(statement.canReprocess || statement.status === "ERROR" || statement.status === "ERREUR") && onReprocess && (
+                        <DropdownMenuItem className="text-blue-600 gap-2" onClick={() => onReprocess(statement)}>
+                            <RefreshCw className="h-4 w-4" /> Reprocesser
+                        </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem className="text-destructive gap-2" onClick={() => onDelete(statement.id)}>
+                        <Trash2 className="h-4 w-4" /> Supprimer
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
+    )
+
     return (
         <>
             <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-xl">
                 <CardHeader className="py-4">
                     <div className="flex items-center gap-3">
                         <FileText className="h-6 w-6 text-emerald-600 bg-emerald-100 p-1 rounded-md" />
-                        <CardTitle className="text-xl">Relevés Bancaires</CardTitle>
+                        <CardTitle className="text-lg sm:text-xl">Relevés Bancaires</CardTitle>
                     </div>
                     <CardDescription className="ml-9">
                         {statements.length} relevé{statements.length > 1 ? "s" : ""} à gérer
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <div className="overflow-x-auto">
+                    {/* Mobile card view */}
+                    <div className="block md:hidden divide-y divide-border/50">
+                        {Array.isArray(statements) && statements.map((statement) => (
+                            <div key={statement.id} className="p-4 space-y-3">
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        <span className="font-medium text-sm truncate">{statement.originalName || statement.filename}</span>
+                                    </div>
+                                    {renderActions(statement)}
+                                </div>
+                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                                    <span><span className="font-medium text-foreground">Période: </span>{statement.month && statement.year ? `${String(statement.month).padStart(2, '0')}/${statement.year}` : "-"}</span>
+                                    <span><span className="font-medium text-foreground">Banque: </span>{statement.bankName || "-"}</span>
+                                    <span className="font-mono"><span className="font-medium text-foreground not-italic">RIB: </span>{statement.rib || "-"}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex gap-3 text-xs">
+                                        <span className="text-red-500 font-medium">{statement.totalDebit ? `- ${statement.totalDebit.toLocaleString()} DH` : "0 DH"}</span>
+                                        <span className="text-emerald-500 font-medium">{statement.totalCredit ? `+ ${statement.totalCredit.toLocaleString()} DH` : "0 DH"}</span>
+                                    </div>
+                                    {renderStatusCell(statement)}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Desktop table view */}
+                    <div className="hidden md:block overflow-x-auto">
                         <Table>
                             <TableHeader>
                                 <TableRow className="border-border/50 hover:bg-transparent bg-muted/30">
@@ -153,74 +220,31 @@ export function BankStatementTable({ statements, onView, onDelete, onValidate, o
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {Array.isArray(statements) && statements.map((statement) => {
-                                    const isLinked = linkedStatements[statement.id] || false
-                                    return (
-                                        <TableRow key={statement.id} className="border-border/50 hover:bg-muted/10 transition-colors">
-                                            <TableCell className="font-medium">
-                                                <div className="flex items-center gap-2">
-                                                    <FileText className="h-4 w-4 text-muted-foreground" />
-                                                    <span>{statement.originalName || statement.filename}</span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                {statement.month && statement.year ? `${String(statement.month).padStart(2, '0')}/${statement.year}` : "-"}
-                                            </TableCell>
-                                            <TableCell>{statement.bankName || "-"}</TableCell>
-                                            <TableCell className="font-mono text-xs">{statement.rib || "-"}</TableCell>
-                                            <TableCell className="text-red-500 font-medium whitespace-nowrap">
-                                                {statement.totalDebit ? `${statement.totalDebit.toLocaleString()} DH` : "0.00 DH"}
-                                            </TableCell>
-                                            <TableCell className="text-emerald-500 font-medium whitespace-nowrap">
-                                                {statement.totalCredit ? `${statement.totalCredit.toLocaleString()} DH` : "0.00 DH"}
-                                            </TableCell>
-                                            <TableCell>{renderStatusCell(statement)}</TableCell>
-                                            <TableCell className="text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <div className="flex items-center gap-2 mr-2">
-                                                        {/* Checkbox 'Lier' supprimée comme demandé */}
-                                                    </div>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 text-primary hover:bg-primary/10"
-                                                        onClick={() => handleViewDetails(statement)}
-                                                        title="Détails"
-                                                    >
-                                                        <Eye className="h-4 w-4" />
-                                                    </Button>
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end" className="w-32">
-                                                            {(statement.status === "TREATED" || statement.status === "READY_TO_VALIDATE" || statement.status === "TRAITE" || statement.status === "PRET_A_VALIDER") && onValidate && (
-                                                                <DropdownMenuItem className="text-emerald-600 gap-2" onClick={() => onValidate(statement.id)}>
-                                                                    <CheckCircle2 className="h-4 w-4" /> Valider
-                                                                </DropdownMenuItem>
-                                                            )}
-                                                            {(statement.status === "VALIDATED" || statement.status === "VALIDE") && onMarkAsAccounted && (
-                                                                <DropdownMenuItem className="text-violet-700 gap-2" onClick={() => onMarkAsAccounted(statement.id)}>
-                                                                    <CheckCircle2 className="h-4 w-4" /> Comptabiliser
-                                                                </DropdownMenuItem>
-                                                            )}
-                                                            {(statement.canReprocess || statement.status === "ERROR" || statement.status === "ERREUR") && onReprocess && (
-                                                                <DropdownMenuItem className="text-blue-600 gap-2" onClick={() => onReprocess(statement)}>
-                                                                    <RefreshCw className="h-4 w-4" /> Reprocesser
-                                                                </DropdownMenuItem>
-                                                            )}
-                                                            <DropdownMenuItem className="text-destructive gap-2" onClick={() => onDelete(statement.id)}>
-                                                                <Trash2 className="h-4 w-4" /> Supprimer
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    )
-                                })}
+                                {Array.isArray(statements) && statements.map((statement) => (
+                                    <TableRow key={statement.id} className="border-border/50 hover:bg-muted/10 transition-colors">
+                                        <TableCell className="font-medium">
+                                            <div className="flex items-center gap-2">
+                                                <FileText className="h-4 w-4 text-muted-foreground" />
+                                                <span>{statement.originalName || statement.filename}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            {statement.month && statement.year ? `${String(statement.month).padStart(2, '0')}/${statement.year}` : "-"}
+                                        </TableCell>
+                                        <TableCell>{statement.bankName || "-"}</TableCell>
+                                        <TableCell className="font-mono text-xs">{statement.rib || "-"}</TableCell>
+                                        <TableCell className="text-red-500 font-medium whitespace-nowrap">
+                                            {statement.totalDebit ? `${statement.totalDebit.toLocaleString()} DH` : "0.00 DH"}
+                                        </TableCell>
+                                        <TableCell className="text-emerald-500 font-medium whitespace-nowrap">
+                                            {statement.totalCredit ? `${statement.totalCredit.toLocaleString()} DH` : "0.00 DH"}
+                                        </TableCell>
+                                        <TableCell>{renderStatusCell(statement)}</TableCell>
+                                        <TableCell className="text-right">
+                                            {renderActions(statement)}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
                             </TableBody>
                         </Table>
                     </div>
@@ -262,32 +286,32 @@ export function BankTransactionTable({ transactions, statement, onUpdate }: Bank
     return (
         <Card className="border-border/50 bg-card/50">
             <CardHeader className="py-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="flex items-center gap-3">
-                        <FileText className="h-6 w-6 text-emerald-600 bg-emerald-100 p-1 rounded-md" />
-                        <CardTitle className="text-xl">Prévisualisation du Relevé</CardTitle>
+                        <FileText className="h-6 w-6 text-emerald-600 bg-emerald-100 p-1 rounded-md shrink-0" />
+                        <CardTitle className="text-lg sm:text-xl">Prévisualisation du Relevé</CardTitle>
                     </div>
                     {statement && (
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-wrap items-center gap-3 text-xs">
                             <div className="flex flex-col items-end">
-                                <span className="text-xs text-muted-foreground uppercase font-semibold">Compte</span>
+                                <span className="text-muted-foreground uppercase font-semibold">Compte</span>
                                 <Badge variant={statement.isLinked ? "default" : "outline"} className={statement.isLinked ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" : "text-orange-600 bg-orange-500/10 border-orange-500/60"}>
                                     {statement.isLinked ? "LIÉ" : "NON LIÉ"}
                                 </Badge>
                             </div>
-                            <div className="flex flex-col items-end border-l pl-4 border-border/50">
-                                <span className="text-xs text-muted-foreground uppercase font-semibold">Transactions</span>
-                                <span className="font-bold">{statement.transactionCount || 0}</span>
+                            <div className="flex flex-col items-end border-l pl-3 border-border/50">
+                                <span className="text-muted-foreground uppercase font-semibold">Transactions</span>
+                                <span className="font-bold text-sm">{statement.transactionCount || 0}</span>
                             </div>
-                            <div className="flex flex-col items-end border-l pl-4 border-border/50">
-                                <span className="text-xs text-muted-foreground uppercase font-semibold text-red-500">Débit Total</span>
-                                <span className="font-bold text-red-500">
+                            <div className="flex flex-col items-end border-l pl-3 border-border/50">
+                                <span className="text-muted-foreground uppercase font-semibold text-red-500">Débit</span>
+                                <span className="font-bold text-red-500 text-sm">
                                     {statement.totalDebit ? `${statement.totalDebit.toLocaleString()} DH` : "0.00 DH"}
                                 </span>
                             </div>
-                            <div className="flex flex-col items-end border-l pl-4 border-border/50">
-                                <span className="text-xs text-muted-foreground uppercase font-semibold text-emerald-500">Crédit Total</span>
-                                <span className="font-bold text-emerald-500">
+                            <div className="flex flex-col items-end border-l pl-3 border-border/50">
+                                <span className="text-muted-foreground uppercase font-semibold text-emerald-500">Crédit</span>
+                                <span className="font-bold text-emerald-500 text-sm">
                                     {statement.totalCredit ? `${statement.totalCredit.toLocaleString()} DH` : "0.00 DH"}
                                 </span>
                             </div>
@@ -299,7 +323,44 @@ export function BankTransactionTable({ transactions, statement, onUpdate }: Bank
                 </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-                <div className="overflow-x-auto">
+                {/* Mobile card view */}
+                <div className="block lg:hidden divide-y divide-border/50">
+                    {Array.isArray(transactions) && transactions.map((tx) => (
+                        <div key={tx.id} className="p-4 space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                                <div className="space-y-0.5">
+                                    <p className="text-xs text-muted-foreground">{tx.dateOperation}</p>
+                                    <p className="text-sm font-medium truncate max-w-[200px]" title={tx.libelle}>{tx.libelle}</p>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                    <Checkbox
+                                        id={`link-m-${tx.id}`}
+                                        checked={tx.isLinked}
+                                        onCheckedChange={(checked) => onUpdate && onUpdate({ ...tx, isLinked: !!checked })}
+                                        className="h-4 w-4 border-muted-foreground data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
+                                    />
+                                    <label htmlFor={`link-m-${tx.id}`} className="text-xs font-medium cursor-pointer">Lier</label>
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <div className="flex gap-3">
+                                    {tx.debit > 0 && <span className="text-red-500 font-medium text-xs">- {tx.debit.toLocaleString()} DH</span>}
+                                    {tx.credit > 0 && <span className="text-emerald-500 font-medium text-xs">+ {tx.credit.toLocaleString()} DH</span>}
+                                </div>
+                                {tx.isValid ? (
+                                    <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-xs">Valide</Badge>
+                                ) : tx.needsReview ? (
+                                    <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/30 text-xs">À réviser</Badge>
+                                ) : (
+                                    <Badge variant="outline" className="text-xs">OCR</Badge>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Desktop table view */}
+                <div className="hidden lg:block overflow-x-auto">
                     <Table>
                         <TableHeader>
                             <TableRow className="bg-muted/30">

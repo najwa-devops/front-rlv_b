@@ -200,7 +200,7 @@ export function UploadBankPage({ onUpload, onViewBankStatement, isDemoMode }: Up
                         onDrop={handleDrop}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
-                        className={`relative flex min-h-[280px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-all duration-300 ${isDragOver
+                        className={`relative flex min-h-[160px] sm:min-h-[280px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-all duration-300 ${isDragOver
                             ? "border-primary bg-primary/5 scale-[1.01]"
                             : "border-border/50 hover:border-primary/50 hover:bg-accent/30"
                             }`}
@@ -212,22 +212,22 @@ export function UploadBankPage({ onUpload, onViewBankStatement, isDemoMode }: Up
                             onChange={handleFileSelect}
                             className="absolute inset-0 cursor-pointer opacity-0"
                         />
-                        <div className="flex flex-col items-center gap-4 text-center px-6">
+                        <div className="flex flex-col items-center gap-3 sm:gap-4 text-center px-4 sm:px-6">
                             <div
-                                className={`flex h-20 w-20 items-center justify-center rounded-2xl transition-all duration-300 ${isDragOver ? "bg-primary/20 scale-110" : "bg-primary/10"
+                                className={`flex h-14 w-14 sm:h-20 sm:w-20 items-center justify-center rounded-2xl transition-all duration-300 ${isDragOver ? "bg-primary/20 scale-110" : "bg-primary/10"
                                     }`}
                             >
                                 <Upload
-                                    className={`h-10 w-10 transition-all duration-300 ${isDragOver ? "text-primary scale-110" : "text-primary"}`}
+                                    className={`h-7 w-7 sm:h-10 sm:w-10 transition-all duration-300 ${isDragOver ? "text-primary scale-110" : "text-primary"}`}
                                 />
                             </div>
                             <div>
-                                <p className="text-lg font-medium text-foreground">Glissez vos relevés bancaires ici</p>
-                                <p className="text-sm text-muted-foreground mt-1">
+                                <p className="text-sm sm:text-lg font-medium text-foreground">Glissez vos relevés bancaires ici</p>
+                                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                                     ou <span className="text-primary font-medium">cliquez pour selectionner</span>
                                 </p>
                             </div>
-                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground">
                                 <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50">PDF, XLSX, XLS</span>
                                 <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50">Max 10 Mo</span>
                             </div>

@@ -3,13 +3,11 @@
 import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { BankStatementTable } from "@/components/bank-statement-table"
-import { BankStatsCards } from "@/components/bank-stats-cards"
 import { UploadBankPage } from "@/components/upload-bank-page"
 import { api } from "@/lib/api"
-import { BankStatementStats, BankStatementV2 } from "@/lib/types"
+import { BankStatementV2 } from "@/lib/types"
 import { toast } from "sonner"
 
 function BankListPageContent() {
@@ -17,17 +15,12 @@ function BankListPageContent() {
     const searchParams = useSearchParams()
     const [loading, setLoading] = useState(true)
     const [statements, setStatements] = useState<BankStatementV2[]>([])
-    const [stats, setStats] = useState<BankStatementStats | null>(null)
     const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "validated" | "accounted">("all")
 
     const loadData = async () => {
         try {
-            const [statementsData, statsData] = await Promise.all([
-                api.getAllBankStatements({ limit: 1000 }),
-                api.getBankStatementStats(),
-            ])
+            const statementsData = await api.getAllBankStatements({ limit: 1000 })
             setStatements(Array.isArray(statementsData) ? statementsData : [])
-            setStats(statsData)
         } catch (error) {
             console.error("Error loading bank statements:", error)
             toast.error("Impossible de charger les relevés bancaires")
@@ -177,40 +170,27 @@ function BankListPageContent() {
     }
 
     return (
-        <div className="container mx-auto py-6 space-y-6">
-            <BankStatsCards stats={stats} />
-
+        <div className="container mx-auto py-3 sm:py-6 space-y-4 sm:space-y-6">
             <UploadBankPage onUpload={handleUpload} onViewBankStatement={() => {}} />
 
-            <Card className="border-border/50 bg-card/50">
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle className="text-2xl">Liste des Relevés Bancaires</CardTitle>
-                            <CardDescription>
-                                {filteredStatements.length} relevé{filteredStatements.length > 1 ? "s" : ""} affiché{filteredStatements.length > 1 ? "s" : ""}
-                            </CardDescription>
-                        </div>
-                        <Button variant="destructive" size="sm" onClick={handleDeleteAll} disabled={statements.length === 0}>
-                            Tout supprimer
-                        </Button>
-                    </div>
-                </CardHeader>
-            </Card>
-
-            <div className="flex flex-wrap gap-2">
-                <Button variant={statusFilter === "all" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("all")}>
+            <div className="flex flex-wrap items-center gap-2">
+                <Button variant={statusFilter === "all" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("all")} className="shrink-0">
                     Tous
                 </Button>
-                <Button variant={statusFilter === "pending" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("pending")}>
+                <Button variant={statusFilter === "pending" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("pending")} className="shrink-0">
                     À traiter
                 </Button>
-                <Button variant={statusFilter === "validated" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("validated")}>
+                <Button variant={statusFilter === "validated" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("validated")} className="shrink-0">
                     Validés
                 </Button>
-                <Button variant={statusFilter === "accounted" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("accounted")}>
+                <Button variant={statusFilter === "accounted" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("accounted")} className="shrink-0">
                     Comptabilisés
                 </Button>
+                <div className="w-full sm:w-auto sm:ml-auto">
+                    <Button variant="destructive" size="sm" onClick={handleDeleteAll} disabled={statements.length === 0}>
+                        Tout supprimer
+                    </Button>
+                </div>
             </div>
 
             <BankStatementTable

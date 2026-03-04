@@ -43,7 +43,7 @@ export function TierSelectionModal({
     async function loadTiers() {
         setIsLoading(true)
         try {
-            const data = await api.getTiers(true) // Get only active tiers
+            const data = await api.getTiers(true)
             setTiers(data)
         } catch (error) {
             console.error("Error loading tiers:", error)
@@ -65,7 +65,7 @@ export function TierSelectionModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+            <DialogContent className="w-[98vw] max-w-[98vw] sm:max-w-2xl max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Sélectionner un fournisseur existant</DialogTitle>
                     <DialogDescription>
@@ -73,7 +73,7 @@ export function TierSelectionModal({
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="relative my-4">
+                <div className="relative my-3">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Rechercher par nom, ICE, IF..."
@@ -89,55 +89,91 @@ export function TierSelectionModal({
                             <Loader2 className="h-6 w-6 animate-spin text-primary" />
                         </div>
                     ) : (
-                        <Table>
-                            <TableHeader className="sticky top-0 bg-background z-10">
-                                <TableRow>
-                                    <TableHead>Fournisseur</TableHead>
-                                    <TableHead>Compte</TableHead>
-                                    <TableHead>Config TVA</TableHead>
-                                    <TableHead className="text-right">Action</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
+                        <>
+                            {/* Mobile card view */}
+                            <div className="block sm:hidden divide-y divide-border/50">
                                 {filteredTiers.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
-                                            Aucun fournisseur trouvé.
-                                        </TableCell>
-                                    </TableRow>
+                                    <div className="p-8 text-center text-muted-foreground text-sm">
+                                        Aucun fournisseur trouvé.
+                                    </div>
                                 ) : (
                                     filteredTiers.map((tier) => (
-                                        <TableRow key={tier.id}>
-                                            <TableCell>
-                                                <div className="font-medium">{tier.libelle}</div>
+                                        <div key={tier.id} className="p-3 flex items-center justify-between gap-3">
+                                            <div className="min-w-0 flex-1">
+                                                <div className="font-medium text-sm truncate">{tier.libelle}</div>
                                                 <div className="text-xs text-muted-foreground">
                                                     {tier.ice ? `ICE: ${tier.ice}` : tier.ifNumber ? `IF: ${tier.ifNumber}` : "Non identifié"}
                                                 </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge variant="outline" className="font-mono text-xs">
-                                                    {tier.displayAccount || tier.tierNumber}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                {tier.hasTvaConfiguration ? (
-                                                    <Badge variant="secondary" className="text-xs">
-                                                        {tier.tvaDisplayFormat || "Configuré"}
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <Badge variant="outline" className="font-mono text-xs">
+                                                        {tier.displayAccount || tier.tierNumber}
                                                     </Badge>
-                                                ) : (
-                                                    <span className="text-muted-foreground text-xs text-center block w-8">-</span>
-                                                )}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <Button size="sm" onClick={() => onSelect(tier)}>
-                                                    Sélectionner
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
+                                                    {tier.hasTvaConfiguration && (
+                                                        <Badge variant="secondary" className="text-xs">
+                                                            {tier.tvaDisplayFormat || "TVA"}
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <Button size="sm" onClick={() => onSelect(tier)} className="shrink-0">
+                                                Choisir
+                                            </Button>
+                                        </div>
                                     ))
                                 )}
-                            </TableBody>
-                        </Table>
+                            </div>
+
+                            {/* Desktop table view */}
+                            <Table className="hidden sm:table">
+                                <TableHeader className="sticky top-0 bg-background z-10">
+                                    <TableRow>
+                                        <TableHead>Fournisseur</TableHead>
+                                        <TableHead>Compte</TableHead>
+                                        <TableHead>Config TVA</TableHead>
+                                        <TableHead className="text-right">Action</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredTiers.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
+                                                Aucun fournisseur trouvé.
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        filteredTiers.map((tier) => (
+                                            <TableRow key={tier.id}>
+                                                <TableCell>
+                                                    <div className="font-medium">{tier.libelle}</div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        {tier.ice ? `ICE: ${tier.ice}` : tier.ifNumber ? `IF: ${tier.ifNumber}` : "Non identifié"}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant="outline" className="font-mono text-xs">
+                                                        {tier.displayAccount || tier.tierNumber}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                    {tier.hasTvaConfiguration ? (
+                                                        <Badge variant="secondary" className="text-xs">
+                                                            {tier.tvaDisplayFormat || "Configuré"}
+                                                        </Badge>
+                                                    ) : (
+                                                        <span className="text-muted-foreground text-xs text-center block w-8">-</span>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <Button size="sm" onClick={() => onSelect(tier)}>
+                                                        Sélectionner
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </>
                     )}
                 </div>
             </DialogContent>

@@ -155,34 +155,36 @@ export function OcrProcessingBankPage({
     }
 
     return (
-        <div className="min-h-screen bg-background p-6">
-            <div className="mb-6 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" onClick={onBack}>
+        <div className="min-h-screen bg-background p-3 sm:p-6">
+            <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-3">
+                    <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0">
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
-                    <div>
-                        <h1 className="text-xl font-bold text-foreground">
-                            Relevé Bancaire: {statement.filename}
+                    <div className="min-w-0">
+                        <h1 className="text-base sm:text-xl font-bold text-foreground truncate">
+                            Relevé: {statement.filename}
                         </h1>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground mt-1">
                             <span>Date: {formatDate(statement.createdAt)}</span>
                             <span>Statut: {statement.status === "validated" ? "Validé" : "À traiter"}</span>
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2">
                     <Dialog>
                         <DialogTrigger asChild>
                             <Button
                                 variant="outline"
+                                size="sm"
                                 className="gap-2 bg-transparent border-primary/20 hover:bg-primary/5"
                             >
                                 <Eye className="h-4 w-4" />
-                                Inspecter Texte OCR
+                                <span className="hidden sm:inline">Inspecter Texte OCR</span>
+                                <span className="sm:hidden">OCR</span>
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-[50vw] sm:max-w-[50vw] w-full max-h-[90vh] flex flex-col">
+                        <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-[70vw] max-h-[90vh] flex flex-col">
                             <DialogHeader>
                                 <DialogTitle>Inspection du Texte Extrait par OCR</DialogTitle>
                             </DialogHeader>
@@ -210,27 +212,30 @@ export function OcrProcessingBankPage({
                     </Dialog>
                     <Button
                         variant="outline"
+                        size="sm"
                         className="gap-2 bg-transparent"
                         onClick={handleOcrExtract}
                         disabled={isProcessingOcr}
                     >
                         <RefreshCw className={`h-4 w-4 ${isProcessingOcr ? "animate-spin" : ""}`} />
-                        Reprocesser OCR
+                        <span className="hidden sm:inline">Reprocesser OCR</span>
+                        <span className="sm:hidden">Reprocesser</span>
                     </Button>
                     <Button
+                        size="sm"
                         className="gap-2"
                         onClick={handleSave}
                         disabled={isSaving}
                     >
                         {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                        Valider le relevé
+                        Valider
                     </Button>
                 </div>
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-2 mt-6">
+            <div className="grid gap-4 sm:gap-6 lg:grid-cols-2 mt-4 sm:mt-6">
                 {/* Document view */}
-                <Card className="h-[calc(100vh-200px)] overflow-hidden flex flex-col">
+                <Card className="h-[50vh] sm:h-[calc(100vh-260px)] lg:h-[calc(100vh-200px)] overflow-hidden flex flex-col">
                     <CardHeader className="py-3 px-4 border-b">
                         <div className="flex items-center justify-between">
                             <CardTitle className="text-sm font-medium">Document</CardTitle>

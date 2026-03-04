@@ -69,7 +69,6 @@ export const getDossierNavConfig = (_dossierId: string | number): NavItemConfig[
 
 export const ROUTE_METADATA: Record<string, { title: string; breadcrumb?: string }> = {
     "/login": { title: "Connexion", breadcrumb: "Connexion" },
-    "/bank/list": { title: "Liste des Relevés Bancaires", breadcrumb: "Liste" },
     "/bank/ocr": { title: "Détails du relevé", breadcrumb: "OCR" },
 };
 

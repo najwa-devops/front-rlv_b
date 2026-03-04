@@ -590,116 +590,102 @@ export function BankStatementDetailModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-[90vw] sm:max-w-[90vw] w-full h-[90vh] min-h-0 flex flex-col p-0 gap-0 overflow-hidden">
-                <DialogHeader className="p-6 pb-2 border-b bg-card z-10">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => onOpenChange(false)}
-                                className="gap-2 text-muted-foreground hover:text-foreground"
-                            >
-                                <ArrowLeft className="h-4 w-4" />
-                                Retour
-                            </Button>
-                            <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-                                <FileText className="h-5 w-5 text-emerald-600" />
+            <DialogContent className="w-full max-w-[100vw] sm:max-w-[95vw] lg:max-w-[90vw] h-[100dvh] max-h-[100dvh] sm:h-[95vh] lg:h-[90vh] min-h-0 flex flex-col p-0 gap-0 overflow-hidden rounded-none sm:rounded-lg">
+                <DialogHeader className="p-3 sm:p-5 pb-2 border-b bg-card z-10 shrink-0">
+                    <div className="flex flex-col gap-2 sm:gap-3">
+                        <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => onOpenChange(false)}
+                                    className="gap-1 text-muted-foreground hover:text-foreground shrink-0 px-2"
+                                >
+                                    <ArrowLeft className="h-4 w-4" />
+                                    <span className="hidden sm:inline text-sm">Retour</span>
+                                </Button>
+                                <div className="h-7 w-7 sm:h-9 sm:w-9 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
+                                    <FileText className="h-3.5 w-3.5 sm:h-5 sm:w-5 text-emerald-600" />
+                                </div>
+                                <div className="min-w-0">
+                                    <DialogTitle className="text-sm sm:text-lg leading-tight">Détail du Relevé Bancaire</DialogTitle>
+                                    <DialogDescription className="truncate text-xs mt-0.5">
+                                        {localStatement.originalName} • {localStatement.bankName}
+                                    </DialogDescription>
+                                </div>
                             </div>
-                            <div>
-                                <DialogTitle className="text-xl">Détail du Relevé Bancaire</DialogTitle>
-                                <DialogDescription>
-                                    {localStatement.originalName} • {localStatement.bankName}
-                                </DialogDescription>
-                            </div>
+                            {getStatusBadge(localStatement.status)}
                         </div>
-                        <div className="flex items-center gap-6 pr-8">
-                            <div className="text-right">
-                                <span className="text-xs text-muted-foreground uppercase font-semibold block">Statut</span>
-                                {getStatusBadge(localStatement.status)}
-                                {isAccountedStatus(localStatement.status) && localStatement.accountedAt && (
-                                    <p className="text-[11px] text-muted-foreground mt-1">
-                                        {new Date(localStatement.accountedAt).toLocaleString()} {localStatement.accountedBy ? `• ${localStatement.accountedBy}` : ""}
-                                    </p>
-                                )}
-                            </div>
-                            <div className="text-right border-l pl-6">
-                                <span className="text-xs text-muted-foreground uppercase font-semibold block">Compte</span>
+                        <div className="flex items-center gap-2 sm:gap-3 text-xs overflow-x-auto pb-1 scrollbar-thin">
+                            {/* Compte */}
+                            <div className="shrink-0 flex flex-col items-start gap-0.5">
+                                <span className="text-muted-foreground uppercase font-semibold text-[10px]">Compte</span>
                                 <Badge variant={localStatement.isLinked ? "default" : "outline"}
                                     className={cn(
+                                        "text-[10px] px-1.5 py-0",
                                         localStatement.isLinked
                                             ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
                                             : "text-orange-600 bg-orange-500/10 border-orange-500/60"
                                     )}>
                                     {localStatement.isLinked ? "LIÉ" : "NON LIÉ"}
                                 </Badge>
-                                {localStatement.status === "ERROR" || localStatement.status === "PARTIAL_SUCCESS" ? (
-                                    <div className="flex flex-col gap-1 mt-1">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={handleRetry}
-                                            disabled={loading}
-                                            className="h-7 text-[10px] gap-1 px-2 border-orange-200 text-orange-700 hover:bg-orange-50"
-                                        >
-                                            <Loader2 className={cn("h-3 w-3", loading && "animate-spin")} />
-                                            Relancer
-                                        </Button>
-                                    </div>
-                                ) : null}
+                                {(localStatement.status === "ERROR" || localStatement.status === "PARTIAL_SUCCESS") && (
+                                    <Button variant="outline" size="sm" onClick={handleRetry} disabled={loading}
+                                        className="h-6 text-[9px] gap-1 px-1.5 border-orange-200 text-orange-700 hover:bg-orange-50 mt-0.5">
+                                        <Loader2 className={cn("h-2.5 w-2.5", loading && "animate-spin")} />
+                                        Relancer
+                                    </Button>
+                                )}
                             </div>
-                            <div className="text-right border-l pl-6">
-                                <span className="text-xs text-muted-foreground uppercase font-semibold block">Règle TTC</span>
-                                <div className="mt-1 flex items-center justify-end gap-2">
+
+                            {/* TTC */}
+                            <div className="shrink-0 border-l pl-2 sm:pl-3 flex flex-col gap-0.5">
+                                <span className="text-muted-foreground uppercase font-semibold text-[10px]">TTC</span>
+                                <div className="flex items-center gap-1.5">
                                     <Checkbox
                                         id={`ttc-rule-${localStatement.id}`}
                                         checked={Boolean(localStatement.applyTtcRule)}
                                         onCheckedChange={(checked) => handleToggleTtcRule(checked === true)}
                                         disabled={ttcUpdating || isAccounted}
+                                        className="h-3.5 w-3.5"
                                     />
-                                    <Label
-                                        htmlFor={`ttc-rule-${localStatement.id}`}
-                                        className="text-xs font-medium cursor-pointer"
-                                    >
+                                    <Label htmlFor={`ttc-rule-${localStatement.id}`} className="text-[11px] font-medium cursor-pointer">
                                         Appliquer
                                     </Label>
-                                    {ttcUpdating ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" /> : null}
+                                    {ttcUpdating && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
                                 </div>
                             </div>
-                            <div className="text-right border-l pl-6 space-y-1">
-                                <span className="text-xs text-muted-foreground uppercase font-semibold block">Outils</span>
+
+                            {/* OCR Tool */}
+                            <div className="shrink-0 border-l pl-2 sm:pl-3 flex flex-col gap-0.5">
+                                <span className="text-muted-foreground uppercase font-semibold text-[10px]">OCR</span>
                                 <Dialog>
                                     <DialogTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-7 text-[10px] gap-1 px-2 border-primary/20 hover:bg-primary/5"
-                                        >
-                                            <Eye className="h-3 w-3" />
-                                            Inspecter OCR
+                                        <Button variant="outline" size="sm"
+                                            className="h-6 text-[10px] gap-1 px-1.5 border-primary/20 hover:bg-primary/5">
+                                            <Eye className="h-2.5 w-2.5" />
+                                            Inspecter
                                         </Button>
                                     </DialogTrigger>
-                                    <DialogContent className="max-w-[50vw] sm:max-w-[50vw] w-full max-h-[85vh] flex flex-col p-6">
+                                    <DialogContent className="w-[96vw] max-w-[96vw] sm:max-w-[70vw] max-h-[90vh] flex flex-col p-4 sm:p-6">
                                         <DialogHeader>
-                                            <DialogTitle>Inspection du Texte Extrait (OCR)</DialogTitle>
-                                            <DialogDescription>
-                                                Visualisez le texte brut et nettoyé pour diagnostiquer les erreurs d'extraction.
-                                            </DialogDescription>
+                                            <DialogTitle className="text-base">Texte OCR Extrait</DialogTitle>
+                                            <DialogDescription>Texte brut et nettoyé pour diagnostiquer les erreurs.</DialogDescription>
                                         </DialogHeader>
-                                        <Tabs defaultValue="cleaned" className="flex-1 flex flex-col overflow-hidden">
-                                            <TabsList className="mb-4">
-                                                <TabsTrigger value="cleaned">Texte Nettoyé</TabsTrigger>
-                                                <TabsTrigger value="raw">Texte Brut</TabsTrigger>
+                                        <Tabs defaultValue="cleaned" className="flex-1 flex flex-col overflow-hidden mt-2">
+                                            <TabsList className="mb-3">
+                                                <TabsTrigger value="cleaned" className="text-xs">Nettoyé</TabsTrigger>
+                                                <TabsTrigger value="raw" className="text-xs">Brut</TabsTrigger>
                                             </TabsList>
                                             <TabsContent value="cleaned" className="flex-1 overflow-hidden">
-                                                <ScrollArea className="h-[50vh] w-full rounded-md border p-4 bg-muted/20">
+                                                <ScrollArea className="h-[55vh] w-full rounded-md border p-3 bg-muted/20">
                                                     <pre className="text-xs whitespace-pre-wrap font-mono leading-relaxed">
                                                         {localStatement.cleanedOcrText || "Aucun texte nettoyé disponible."}
                                                     </pre>
                                                 </ScrollArea>
                                             </TabsContent>
                                             <TabsContent value="raw" className="flex-1 overflow-hidden">
-                                                <ScrollArea className="h-[50vh] w-full rounded-md border p-4 bg-muted/20">
+                                                <ScrollArea className="h-[55vh] w-full rounded-md border p-3 bg-muted/20">
                                                     <pre className="text-xs whitespace-pre-wrap font-mono leading-relaxed">
                                                         {localStatement.rawOcrText || "Aucun texte brut disponible."}
                                                     </pre>
@@ -709,19 +695,25 @@ export function BankStatementDetailModal({
                                     </DialogContent>
                                 </Dialog>
                             </div>
-                            <div className="text-right border-l pl-6">
-                                <span className="text-xs text-muted-foreground uppercase font-semibold block">Transactions</span>
-                                <span className="font-bold text-lg">{editableTransactions.length || 0}</span>
+
+                            {/* Transactions count */}
+                            <div className="shrink-0 border-l pl-2 sm:pl-3 flex flex-col gap-0.5">
+                                <span className="text-[10px] text-muted-foreground uppercase font-semibold">Lignes</span>
+                                <span className="font-bold text-sm sm:text-base">{editableTransactions.length || 0}</span>
                             </div>
-                            <div className="text-right border-l pl-6">
-                                <span className="text-xs text-muted-foreground uppercase font-semibold block text-red-500">Débit Total</span>
-                                <span className="font-bold text-lg text-red-500">
+
+                            {/* Debit */}
+                            <div className="shrink-0 border-l pl-2 sm:pl-3 flex flex-col gap-0.5">
+                                <span className="text-[10px] text-muted-foreground uppercase font-semibold text-red-500">Débit</span>
+                                <span className="font-bold text-sm sm:text-base text-red-500 whitespace-nowrap">
                                     {localStatement.totalDebit ? `${localStatement.totalDebit.toLocaleString(undefined, { minimumFractionDigits: 2 })} DH` : "0.00 DH"}
                                 </span>
                             </div>
-                            <div className="text-right border-l pl-6">
-                                <span className="text-xs text-muted-foreground uppercase font-semibold block text-emerald-500">Crédit Total</span>
-                                <span className="font-bold text-lg text-emerald-500">
+
+                            {/* Credit */}
+                            <div className="shrink-0 border-l pl-2 sm:pl-3 flex flex-col gap-0.5">
+                                <span className="text-[10px] text-muted-foreground uppercase font-semibold text-emerald-500">Crédit</span>
+                                <span className="font-bold text-sm sm:text-base text-emerald-500 whitespace-nowrap">
                                     {localStatement.totalCredit ? `${localStatement.totalCredit.toLocaleString(undefined, { minimumFractionDigits: 2 })} DH` : "0.00 DH"}
                                 </span>
                             </div>
@@ -729,7 +721,7 @@ export function BankStatementDetailModal({
                     </div>
                 </DialogHeader>
 
-                <div className="flex-1 min-h-0 overflow-hidden bg-muted/10 p-6 flex flex-col gap-6">
+                <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain [-webkit-overflow-scrolling:touch] bg-muted/10 p-2 sm:p-4 flex flex-col gap-3 sm:gap-4">
                     {localStatement.validationErrors && (
                         <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-3 text-red-500 shrink-0">
                             <AlertTriangle className="h-5 w-5 mt-0.5" />
@@ -741,8 +733,8 @@ export function BankStatementDetailModal({
                     )}
 
                     {!isAccounted && (
-                        <div className="rounded-md border bg-card shadow-sm p-4 shrink-0">
-                            <div className="grid grid-cols-1 md:grid-cols-8 gap-3 items-end">
+                        <div className="rounded-md border bg-card shadow-sm p-3 sm:p-4 shrink-0">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-2 sm:gap-3 items-end">
                                 <div className="space-y-1">
                                     <Label>N° Transaction</Label>
                                     <Input
@@ -825,7 +817,7 @@ export function BankStatementDetailModal({
                                         </PopoverContent>
                                     </Popover>
                                 </div>
-                                <div className="space-y-1 md:col-span-2">
+                                <div className="space-y-1 col-span-2 sm:col-span-1 md:col-span-2">
                                     <Label>Libellé</Label>
                                     <Input
                                         value={newTransaction.libelle}
@@ -865,13 +857,13 @@ export function BankStatementDetailModal({
                             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                         </div>
                     ) : (
-                        <div className="relative rounded-md border bg-card shadow-sm overflow-hidden flex-1 min-h-0 flex flex-col">
+                        <div className="relative rounded-md border bg-card shadow-sm overflow-hidden shrink-0 flex flex-col min-h-[280px] h-[52vh] sm:h-[50vh] md:h-[48vh] lg:h-[56vh]">
                             {(isValidatedStatus(localStatement.status) || isAccountedStatus(localStatement.status)) && (
                                 <div className="pointer-events-none absolute inset-x-0 top-14 bottom-0 z-20 flex items-center justify-center">
-                                    <div className="flex flex-col items-center gap-8">
+                                    <div className="flex flex-col items-center gap-6 sm:gap-8">
                                         {isValidatedStatus(localStatement.status) && (
                                             <div
-                                                className="select-none border-[6px] border-emerald-600 text-emerald-600 rounded-xl px-12 py-3 text-6xl font-extrabold tracking-wider uppercase rotate-[-8deg] opacity-90 bg-white/10"
+                                                className="select-none border-4 sm:border-[6px] border-emerald-600 text-emerald-600 rounded-xl px-5 sm:px-12 py-2 sm:py-3 text-3xl sm:text-6xl font-extrabold tracking-wider uppercase rotate-[-8deg] opacity-90 bg-white/10"
                                                 style={{
                                                     textShadow: "0 0 1px rgba(5,150,105,0.45)",
                                                     boxShadow: "inset 0 0 0 2px rgba(5,150,105,0.45)",
@@ -882,7 +874,7 @@ export function BankStatementDetailModal({
                                         )}
                                         {isAccountedStatus(localStatement.status) && (
                                             <div
-                                                className="select-none border-[6px] border-violet-600 text-violet-600 rounded-xl px-12 py-3 text-6xl font-extrabold tracking-wider uppercase rotate-[-8deg] opacity-90 bg-white/10"
+                                                className="select-none border-4 sm:border-[6px] border-violet-600 text-violet-600 rounded-xl px-5 sm:px-12 py-2 sm:py-3 text-2xl sm:text-6xl font-extrabold tracking-wider uppercase rotate-[-8deg] opacity-90 bg-white/10"
                                                 style={{
                                                     textShadow: "0 0 1px rgba(124,58,237,0.45)",
                                                     boxShadow: "inset 0 0 0 2px rgba(124,58,237,0.45)",
@@ -894,8 +886,8 @@ export function BankStatementDetailModal({
                                     </div>
                                 </div>
                             )}
-                            <div className="flex-1 min-h-0 overflow-y-auto">
-                                <Table>
+                            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
+                                <Table className="min-w-[700px]">
                                     <TableHeader>
                                         <TableRow className="bg-muted/50 hover:bg-muted/50">
                                             <TableHead className="w-[100px] text-center">Transaction</TableHead>
@@ -1063,20 +1055,20 @@ export function BankStatementDetailModal({
                     )}
                 </div>
 
-                <div className="p-4 border-t bg-muted/20 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                        <AlertCircle className="h-4 w-4 text-orange-500" />
-                        <p className="text-sm text-muted-foreground">
-                            Les comptes marqués en <span className="font-medium text-orange-600">orange</span> sont liés au plan comptable. Cliquez sur l'icône pour modifier l'imputation.
+                <div className="p-3 sm:p-4 border-t bg-muted/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
+                    <div className="flex items-start gap-2">
+                        <AlertCircle className="h-4 w-4 text-orange-500 shrink-0 mt-0.5" />
+                        <p className="text-xs sm:text-sm text-muted-foreground">
+                            Les comptes en <span className="font-medium text-orange-600">orange</span> sont liés au plan comptable.
                         </p>
                     </div>
                     {!isAccounted && (
-                        <div className="flex items-center gap-2">
-                            <Button size="sm" variant="outline" className="gap-2" onClick={() => setShowAccountingModal(true)} disabled={saving || accountingLoading || confirmLoading}>
+                        <div className="flex w-full sm:w-auto items-center gap-2 shrink-0">
+                            <Button size="sm" variant="outline" className="gap-2 flex-1 sm:flex-none" onClick={() => setShowAccountingModal(true)} disabled={saving || accountingLoading || confirmLoading}>
                                 <Calculator className="h-4 w-4" />
                                 Comptabiliser
                             </Button>
-                            <Button size="sm" className="gap-2" onClick={handleSaveAll} disabled={!hasChanges || saving}>
+                            <Button size="sm" className="gap-2 flex-1 sm:flex-none" onClick={handleSaveAll} disabled={!hasChanges || saving}>
                                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                                 Enregistrer
                             </Button>
@@ -1085,7 +1077,7 @@ export function BankStatementDetailModal({
                 </div>
             </DialogContent>
             <Dialog open={showAccountingModal} onOpenChange={setShowAccountingModal}>
-                <DialogContent className="max-w-[95vw] sm:max-w-5xl">
+                <DialogContent className="w-[98vw] max-w-[98vw] sm:max-w-5xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Simulation de Comptabilisation</DialogTitle>
                         <DialogDescription>
@@ -1104,13 +1096,13 @@ export function BankStatementDetailModal({
                         {simulationResult?.entries?.length ? (
                             <div className="rounded-md border overflow-hidden">
                                 <div className="max-h-[55vh] overflow-auto">
-                                    <Table>
+                                    <Table className="min-w-[700px]">
                                         <TableHeader>
                                             <TableRow className="bg-muted/40">
                                                 <TableHead>Numero</TableHead>
-                                                <TableHead>Mois</TableHead>
+                                                <TableHead className="hidden sm:table-cell">Mois</TableHead>
                                                 <TableHead>Date</TableHead>
-                                                <TableHead>Journal</TableHead>
+                                                <TableHead className="hidden sm:table-cell">Journal</TableHead>
                                                 <TableHead>N° Compte</TableHead>
                                                 <TableHead>Libellé</TableHead>
                                                 <TableHead className="text-right">Débit</TableHead>
@@ -1121,13 +1113,13 @@ export function BankStatementDetailModal({
                                             {simulationResult.entries.map((row: any, index: number) => (
                                                 <TableRow key={`${row.numero}-${index}`} className={row.counterpart ? "bg-muted/30" : ""}>
                                                     <TableCell className="font-mono text-xs">{row.numero}</TableCell>
-                                                    <TableCell>{row.moisTexte} ({row.nmoisTexte})</TableCell>
+                                                    <TableCell className="hidden sm:table-cell">{row.moisTexte} ({row.nmoisTexte})</TableCell>
                                                     <TableCell>{row.dateOperation ? new Date(row.dateOperation).toLocaleDateString("fr-FR") : "-"}</TableCell>
-                                                    <TableCell>{row.journal}</TableCell>
+                                                    <TableCell className="hidden sm:table-cell">{row.journal}</TableCell>
                                                     <TableCell className="font-mono">{row.ncompte}</TableCell>
-                                                    <TableCell className="max-w-[280px] truncate" title={row.libelle}>{row.libelle || "-"}</TableCell>
-                                                    <TableCell className="text-right text-red-600">{Number(row.debit || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                                                    <TableCell className="text-right text-emerald-600">{Number(row.credit || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                                    <TableCell className="max-w-[160px] sm:max-w-[280px] truncate" title={row.libelle}>{row.libelle || "-"}</TableCell>
+                                                    <TableCell className="text-right text-red-600 whitespace-nowrap">{Number(row.debit || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                                    <TableCell className="text-right text-emerald-600 whitespace-nowrap">{Number(row.credit || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
@@ -1143,7 +1135,7 @@ export function BankStatementDetailModal({
                         )}
                     </div>
 
-                    <div className="mt-2 flex justify-end gap-2">
+                    <div className="mt-2 flex flex-col sm:flex-row justify-end gap-2">
                         <Button
                             variant="outline"
                             onClick={() => setShowAccountingModal(false)}

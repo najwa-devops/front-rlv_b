@@ -226,44 +226,46 @@ export function AccountingSettingsPage() {
                                     </Button>
                                 ))}
                             </div>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Compte</TableHead>
-                                        <TableHead>Libelle</TableHead>
-                                        <TableHead>Statut</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {filteredAccounts.map(account => (
-                                        <TableRow key={account.id}>
-                                            <TableCell className="font-mono font-medium">{account.code}</TableCell>
-                                            <TableCell>{account.libelle}</TableCell>
-                                            <TableCell>
-                                                <Badge variant={account.active ? "secondary" : "outline"}>{account.active ? "Actif" : "Inactif"}</Badge>
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <Button size="icon" variant="ghost" onClick={() => openEditAccount(account)}><Pencil className="h-4 w-4" /></Button>
-                                            </TableCell>
+                            <div className="overflow-x-auto">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Compte</TableHead>
+                                            <TableHead>Libelle</TableHead>
+                                            <TableHead className="hidden sm:table-cell">Statut</TableHead>
+                                            <TableHead className="text-right">Actions</TableHead>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {filteredAccounts.map(account => (
+                                            <TableRow key={account.id}>
+                                                <TableCell className="font-mono font-medium">{account.code}</TableCell>
+                                                <TableCell>{account.libelle}</TableCell>
+                                                <TableCell className="hidden sm:table-cell">
+                                                    <Badge variant={account.active ? "secondary" : "outline"}>{account.active ? "Actif" : "Inactif"}</Badge>
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <Button size="icon" variant="ghost" onClick={() => openEditAccount(account)}><Pencil className="h-4 w-4" /></Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
                         </CardContent>
                     </Card>
                 </TabsContent>
 
                 <TabsContent value="tiers" className="space-y-4 pt-4">
                     <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0 pb-2">
                             <CardTitle className="text-xl font-semibold">Annuaire des Fournisseurs</CardTitle>
-                            <div className="flex items-center gap-2">
-                                <div className="relative">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <div className="relative flex-1 sm:flex-none">
                                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                                     <Input
                                         placeholder="Rechercher..."
-                                        className="pl-8 w-[250px]"
+                                        className="pl-8 w-full sm:w-[250px]"
                                         value={searchTierQuery}
                                         onChange={e => setSearchTierQuery(e.target.value)}
                                     />
@@ -271,36 +273,40 @@ export function AccountingSettingsPage() {
                                 <Button onClick={openAddTier}><Plus className="h-4 w-4 mr-2" />Ajouter</Button>
                             </div>
                         </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Fournisseur</TableHead>
-                                        <TableHead>Compte Tier</TableHead>
-                                        <TableHead>Compte HT</TableHead>
-                                        <TableHead>Compte TVA</TableHead>
-                                        <TableHead className="text-center">Statut</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {filteredTiers.map(tier => (
-                                        <TableRow key={tier.id}>
-                                            <TableCell className="font-medium">{tier.libelle}</TableCell>
-                                            <TableCell className="font-mono">{tier.tierNumber}</TableCell>
-                                            <TableCell className="font-mono text-muted-foreground">{tier.defaultChargeAccount || "-"}</TableCell>
-                                            <TableCell className="font-mono text-muted-foreground">{tier.tvaAccount || "-"}</TableCell>
-                                            <TableCell className="text-center">
-                                                {tier.active ? <Badge variant="secondary">Actif</Badge> : <Badge variant="outline">Inactif</Badge>}
-                                            </TableCell>
-                                            <TableCell className="text-right flex justify-end gap-1">
-                                                <Button size="icon" variant="ghost" onClick={() => openEditTier(tier)}><Pencil className="h-4 w-4" /></Button>
-                                                <Button size="icon" variant="ghost" onClick={() => deactivateTier(tier.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
-                                            </TableCell>
+                        <CardContent className="p-0">
+                            <div className="overflow-x-auto">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Fournisseur</TableHead>
+                                            <TableHead>Compte Tier</TableHead>
+                                            <TableHead className="hidden md:table-cell">Compte HT</TableHead>
+                                            <TableHead className="hidden md:table-cell">Compte TVA</TableHead>
+                                            <TableHead className="hidden sm:table-cell text-center">Statut</TableHead>
+                                            <TableHead className="text-right">Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {filteredTiers.map(tier => (
+                                            <TableRow key={tier.id}>
+                                                <TableCell className="font-medium">{tier.libelle}</TableCell>
+                                                <TableCell className="font-mono">{tier.tierNumber}</TableCell>
+                                                <TableCell className="font-mono text-muted-foreground hidden md:table-cell">{tier.defaultChargeAccount || "-"}</TableCell>
+                                                <TableCell className="font-mono text-muted-foreground hidden md:table-cell">{tier.tvaAccount || "-"}</TableCell>
+                                                <TableCell className="text-center hidden sm:table-cell">
+                                                    {tier.active ? <Badge variant="secondary">Actif</Badge> : <Badge variant="outline">Inactif</Badge>}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <div className="flex justify-end gap-1">
+                                                        <Button size="icon" variant="ghost" onClick={() => openEditTier(tier)}><Pencil className="h-4 w-4" /></Button>
+                                                        <Button size="icon" variant="ghost" onClick={() => deactivateTier(tier.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                                    </div>
+                                                </TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
-                            </Table>
+                                </Table>
+                            </div>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -328,7 +334,7 @@ export function AccountingSettingsPage() {
             </Dialog>
 
             <Dialog open={isTierDialogOpen} onOpenChange={setIsTierDialogOpen}>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="w-[98vw] max-w-[98vw] sm:max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>{editingTier ? "Modifier le Fournisseur" : "Ajouter un Fournisseur"}</DialogTitle>
                     </DialogHeader>

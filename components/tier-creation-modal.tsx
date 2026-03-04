@@ -180,7 +180,7 @@ export function TierCreationModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="max-w-2xl overflow-y-auto max-h-[90vh]">
+            <DialogContent className="w-[98vw] max-w-[98vw] sm:max-w-2xl overflow-y-auto max-h-[95vh] sm:max-h-[90vh]">
                 <DialogHeader>
                     <DialogTitle>{isEditMode ? "Modifier le fournisseur" : "Ajouter un fournisseur"}</DialogTitle>
                 </DialogHeader>
