@@ -252,20 +252,6 @@ export interface BankTransactionV2 {
   transactionIndex?: number
 }
 
-export interface BankStatementStats {
-  total: number
-  pending: number
-  processing: number
-  treated: number
-  readyToValidate: number
-  validated: number
-  accounted?: number
-  error: number
-  totalRibs: number
-  invalid: number
-  averageConfidence: number
-}
-
 // ============================================
 // TYPES DIVERS
 // ============================================

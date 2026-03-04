@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   title: "BankingOCR - Gestion intelligente des relevés bancaires",
   description: "Application de traitement OCR et validation de relevés bancaires",
   generator: "iboice.app",
+  icons: {
+    icon: "/placeholder-logo.svg",
+  },
 }
 
 export default function RootLayout({

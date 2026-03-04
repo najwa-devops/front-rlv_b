@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
-import { api } from "@/lib/api"
 import { useAuth } from "@/hooks/use-auth"
 import { getRouteMetadata } from "@/src/config/navigation.config"
 import { Button } from "@/components/ui/button"
@@ -10,10 +9,9 @@ import { useTheme } from "@/components/theme-provider"
 import { Sun, Moon, LogOut, Sparkles } from "lucide-react"
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
-    const [pendingCount, setPendingCount] = useState(0)
     const [mounted, setMounted] = useState(false)
     const pathname = usePathname()
-    const { user, logout, authenticated, loading } = useAuth()
+    const { user, logout } = useAuth()
     const { theme, toggleTheme } = useTheme()
     const isLoginPage = pathname === "/login"
 
@@ -21,27 +19,6 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     const userInitial = displayName.charAt(0).toUpperCase() || "U"
 
     useEffect(() => { setMounted(true) }, [])
-
-    useEffect(() => {
-        if (isLoginPage || loading || !authenticated) {
-            setPendingCount(0)
-            return
-        }
-
-        const fetchPendingCount = async () => {
-            try {
-                const stats = await api.getBankStatementStats()
-                const pending = Number(stats.pending || 0) + Number(stats.processing || 0) + Number(stats.readyToValidate || 0)
-                setPendingCount(pending)
-            } catch {
-                setPendingCount(0)
-            }
-        }
-
-        fetchPendingCount()
-        const interval = setInterval(fetchPendingCount, 30000)
-        return () => clearInterval(interval)
-    }, [pathname, isLoginPage, authenticated, loading])
 
     const { title: pageTitle } = getRouteMetadata(pathname)
 

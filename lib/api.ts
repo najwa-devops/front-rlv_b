@@ -7,7 +7,6 @@ import {
   UpdateTierRequest,
   BankStatementV2,
   BankTransactionV2,
-  BankStatementStats,
   BankOption
 } from "./types"
 
@@ -507,15 +506,6 @@ export async function deleteAllBankStatements(): Promise<void> {
   if (!response.ok) throw new Error(await parseApiError(response))
 }
 
-export async function getBankStatementStats(): Promise<BankStatementStats> {
-  const response = await apiFetch(`${API_BASE_URL}/api/v2/bank-statements/stats?_t=${Date.now()}`, {
-    cache: "no-store",
-    headers: { "Cache-Control": "no-cache, no-store, must-revalidate" },
-  })
-  if (!response.ok) throw new Error(await parseApiError(response))
-  return response.json()
-}
-
 export async function retryFailedBankStatementPages(id: number): Promise<any> {
   const response = await apiFetch(`${API_BASE_URL}/api/v2/bank-statements/${id}/retry-failed`, { method: "POST" })
   if (!response.ok) throw new Error(await parseApiError(response))
@@ -668,7 +658,6 @@ export const api = {
   updateBankStatementTtcRule,
   deleteBankStatement,
   deleteAllBankStatements,
-  getBankStatementStats,
   retryFailedBankStatementPages,
   getBankOptions,
   getTransactionsByStatementId,
