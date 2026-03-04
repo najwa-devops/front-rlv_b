@@ -75,6 +75,7 @@ interface BankStatementDetailModalProps {
     onOpenChange: (open: boolean) => void
     statement: BankStatementV2 | null
     onUpdateTransaction?: (transaction: BankTransactionV2) => void
+    onUpdateStatement?: (statement: BankStatementV2) => void
 }
 
 type NewTransactionForm = {
@@ -152,6 +153,7 @@ export function BankStatementDetailModal({
     onOpenChange,
     statement,
     onUpdateTransaction,
+    onUpdateStatement,
 }: BankStatementDetailModalProps) {
     const [transactions, setTransactions] = useState<BankTransactionV2[]>([])
     const [editableTransactions, setEditableTransactions] = useState<BankTransactionV2[]>([])
@@ -554,14 +556,35 @@ export function BankStatementDetailModal({
         if (!simulationResult?.simulationId || !localStatement) return
 
         setConfirmLoading(true)
+
+        const optimistic: BankStatementV2 = {
+            ...localStatement,
+            status: "COMPTABILISE",
+            statusCode: "COMPTABILISE",
+            accountedAt: new Date().toISOString(),
+        }
+        setLocalStatement(optimistic)
+        onUpdateStatement?.(optimistic)
+
         try {
-            await api.confirmComptabilisation(simulationResult.simulationId)
+            const result = await api.confirmComptabilisation(simulationResult.simulationId)
             setAccountingConfirmed(true)
-            const refreshed = await loadFullData(localStatement.id, true)
-            if (refreshed) setLocalStatement(refreshed)
+
+            const serverPatched: BankStatementV2 = {
+                ...optimistic,
+                status: result?.statementStatus || "COMPTABILISE",
+                statusCode: result?.statementStatus || "COMPTABILISE",
+                accountedAt: result?.accountedAt || optimistic.accountedAt,
+                accountedBy: result?.accountedBy || optimistic.accountedBy,
+            }
+            setLocalStatement(serverPatched)
+            onUpdateStatement?.(serverPatched)
+
+            void loadFullData(localStatement.id, true)
             toast.success("Comptabilisation confirmée avec succès")
         } catch (error) {
             console.error("Error confirm comptabilisation:", error)
+            void loadFullData(localStatement.id, true)
             toast.error(error instanceof Error ? error.message : "Erreur lors de la confirmation")
         } finally {
             setConfirmLoading(false)

@@ -103,11 +103,25 @@ function BankListPageContent() {
     }
 
     const handleMarkAsAccounted = async (id: number) => {
+        const previous = statements
+
+        // Mise à jour instantanée UI sans refresh
+        setStatements((prev) =>
+            prev.map((s) =>
+                s.id === id
+                    ? { ...s, status: "COMPTABILISE", statusCode: "COMPTABILISE", canReprocess: false }
+                    : s
+            )
+        )
+
         try {
-            await api.updateBankStatementStatus(id, "COMPTABILISE")
-            await loadData()
+            const updated = await api.updateBankStatementStatus(id, "COMPTABILISE")
+            setStatements((prev) =>
+                prev.map((s) => (s.id === id ? { ...s, ...updated } : s))
+            )
             toast.success("Relevé comptabilisé")
         } catch (error) {
+            setStatements(previous)
             toast.error("Erreur lors de la comptabilisation")
         }
     }
@@ -212,6 +226,11 @@ function BankListPageContent() {
                 onValidate={handleValidate}
                 onMarkAsAccounted={handleMarkAsAccounted}
                 onReprocess={handleReprocess}
+                onUpdateStatement={(updated) => {
+                    setStatements((prev) =>
+                        prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s))
+                    )
+                }}
             />
         </div>
     )

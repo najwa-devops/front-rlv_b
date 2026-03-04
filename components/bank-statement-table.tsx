@@ -35,9 +35,10 @@ interface BankStatementTableProps {
     onMarkAsAccounted?: (statementId: number) => void
     onReprocess?: (statement: BankStatementV2) => void
     onSave?: (statement: BankStatementV2) => void
+    onUpdateStatement?: (statement: BankStatementV2) => void
 }
 
-export function BankStatementTable({ statements, onView, onDelete, onValidate, onMarkAsAccounted, onReprocess, onSave }: BankStatementTableProps) {
+export function BankStatementTable({ statements, onView, onDelete, onValidate, onMarkAsAccounted, onReprocess, onSave, onUpdateStatement }: BankStatementTableProps) {
     void onView
     void onSave
     // Initialiser les états de "Lier" à partir des données backend si disponibles
@@ -231,6 +232,10 @@ export function BankStatementTable({ statements, onView, onDelete, onValidate, o
                 open={isModalOpen}
                 onOpenChange={setIsModalOpen}
                 statement={selectedStatement}
+                onUpdateStatement={(updated) => {
+                    setSelectedStatement(updated)
+                    onUpdateStatement?.(updated)
+                }}
             />
         </>
     )
