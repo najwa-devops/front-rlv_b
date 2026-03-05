@@ -7,6 +7,10 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  experimental: {
+    // Allow larger multipart uploads when proxying /api/* to backend.
+    proxyClientMaxBodySize: '60mb',
+  },
   images: {
     unoptimized: true,
   },

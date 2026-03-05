@@ -59,6 +59,53 @@ export interface FieldPosition {
 }
 
 // ============================================
+// INVOICE TYPES
+// ============================================
+
+export type InvoiceStatus =
+    | "PENDING"
+    | "PROCESSING"
+    | "TREATED"
+    | "READY_TO_VALIDATE"
+    | "VALIDATED"
+    | "REJECTED"
+    | "ERROR"
+    | "TO_VERIFY"
+    | "VERIFY";
+
+export interface InvoiceDto {
+    id: number;
+    filename: string;
+    originalName?: string;
+    filePath: string;
+    fileSize?: number;
+    extractedText?: string;
+    rawOcrText?: string;
+    fieldsData: Record<string, any>;
+    pendingFields?: string[];
+    missingFields?: string[];
+    lowConfidenceFields?: string[];
+    autoFilledFields?: string[];
+    overallConfidence?: number;
+    averageConfidence?: number;
+    templateId?: number;
+    templateName?: string;
+    extractionMethod?: "DYNAMIC_TEMPLATE" | "PATTERNS" | "MANUAL" | "NONE";
+    status?: InvoiceStatus;
+    createdAt: string;
+    updatedAt?: string;
+    validatedAt?: string;
+    validatedBy?: string;
+    templateDetected?: boolean;
+    allFieldsFound?: boolean;
+    canValidate?: boolean;
+    accounted?: boolean;
+    accountedAt?: string;
+    accountedBy?: string;
+    dossierId?: number;
+}
+
+// ============================================
 // ACCOUNTING TYPES
 // ============================================
 

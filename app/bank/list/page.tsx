@@ -2,13 +2,18 @@
 
 import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Loader2 } from "lucide-react"
+import { Loader2, Building2, FileText } from "lucide-react"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BankStatementTable } from "@/components/bank-statement-table"
 import { UploadBankPage } from "@/components/upload-bank-page"
+import { UploadInvoicePage } from "@/components/upload-invoice-page"
+import { InvoiceTable } from "@/components/invoice-table"
 import { api } from "@/lib/api"
 import { BankStatementV2 } from "@/lib/types"
+import { InvoiceService } from "@/src/api/services/invoice.service"
+import { InvoiceDto } from "@/src/types"
 import { toast } from "sonner"
 
 function BankListPageContent() {
@@ -17,6 +22,12 @@ function BankListPageContent() {
     const [loading, setLoading] = useState(true)
     const [statements, setStatements] = useState<BankStatementV2[]>([])
     const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "validated" | "accounted">("all")
+
+    // Invoice tab state
+    const [invoicesLoading, setInvoicesLoading] = useState(false)
+    const [invoicesFetched, setInvoicesFetched] = useState(false)
+    const [invoices, setInvoices] = useState<InvoiceDto[]>([])
+    const [invoiceStatusFilter, setInvoiceStatusFilter] = useState<"all" | "pending" | "ready" | "validated" | "error">("all")
 
     const loadData = async () => {
         try {
@@ -176,6 +187,118 @@ function BankListPageContent() {
         }
     }
 
+    // ── Invoice tab handlers ──────────────────────────────────────────────────
+
+    const loadInvoices = async () => {
+        setInvoicesLoading(true)
+        try {
+            const data = await InvoiceService.getAll()
+            setInvoices(Array.isArray(data) ? data : [])
+            setInvoicesFetched(true)
+        } catch {
+            toast.error("Impossible de charger les factures")
+        } finally {
+            setInvoicesLoading(false)
+        }
+    }
+
+    const handleTabChange = (value: string) => {
+        if (value === "invoices" && !invoicesFetched) {
+            loadInvoices()
+        }
+    }
+
+    const handleInvoiceUpload = async (files: File[]) => {
+        try {
+            if (files.length === 1) {
+                await InvoiceService.upload(files[0])
+            } else {
+                await InvoiceService.uploadBatch(files)
+            }
+            toast.success(`${files.length} facture${files.length > 1 ? "s" : ""} importée${files.length > 1 ? "s" : ""}`)
+            await loadInvoices()
+        } catch {
+            toast.error("Erreur lors de l'import")
+            throw new Error("upload failed")
+        }
+    }
+
+    const handleInvoiceView = (invoice: InvoiceDto) => {
+        router.push(`/invoices/${invoice.id}`)
+    }
+
+    const handleInvoiceDelete = async (id: number) => {
+        try {
+            await InvoiceService.delete(id)
+            setInvoices((prev) => prev.filter((inv) => inv.id !== id))
+            toast.success("Facture supprimée")
+        } catch {
+            toast.error("Erreur lors de la suppression")
+        }
+    }
+
+    const handleInvoiceProcess = async (id: number) => {
+        try {
+            const updated = await InvoiceService.process(id)
+            setInvoices((prev) => prev.map((inv) => (inv.id === id ? { ...inv, ...updated } : inv)))
+            toast.success("Retraitement lancé")
+        } catch {
+            toast.error("Erreur lors du retraitement")
+        }
+    }
+
+    const handleInvoiceValidate = async (id: number) => {
+        try {
+            const updated = await InvoiceService.validate(id)
+            setInvoices((prev) => prev.map((inv) => (inv.id === id ? { ...inv, ...updated } : inv)))
+            toast.success("Facture validée")
+        } catch {
+            toast.error("Erreur lors de la validation")
+        }
+    }
+
+    const handleInvoiceComptabiliser = async (id: number) => {
+        try {
+            await InvoiceService.comptabiliser(id)
+            setInvoices((prev) => prev.map((inv) => (inv.id === id ? { ...inv, accounted: true } : inv)))
+            toast.success("Facture comptabilisée")
+        } catch (err: any) {
+            const details = err?.response?.data?.details
+            const msg = details ? details.join(", ") : (err?.response?.data?.error || "Erreur lors de la comptabilisation")
+            toast.error(msg)
+        }
+    }
+
+    const handleInvoiceDeleteAll = async () => {
+        if (!confirm("Supprimer toutes les factures ?")) return
+        try {
+            await InvoiceService.bulkDelete(invoices.map((i) => i.id))
+            setInvoices([])
+            toast.success("Toutes les factures ont été supprimées")
+        } catch {
+            toast.error("Erreur lors de la suppression globale")
+        }
+    }
+
+    const filteredInvoices = invoices.filter((inv) => {
+        const s = (inv.status || "").toUpperCase()
+        switch (invoiceStatusFilter) {
+            case "pending":    return ["PENDING", "PROCESSING"].includes(s)
+            case "ready":      return s === "READY_TO_VALIDATE"
+            case "validated":  return s === "VALIDATED"
+            case "error":      return ["ERROR", "REJECTED", "TO_VERIFY", "VERIFY"].includes(s)
+            default:           return true
+        }
+    })
+
+    const invoiceCounts = {
+        all:       invoices.length,
+        pending:   invoices.filter((i) => ["PENDING", "PROCESSING"].includes((i.status || "").toUpperCase())).length,
+        ready:     invoices.filter((i) => (i.status || "").toUpperCase() === "READY_TO_VALIDATE").length,
+        validated: invoices.filter((i) => (i.status || "").toUpperCase() === "VALIDATED").length,
+        error:     invoices.filter((i) => ["ERROR", "REJECTED", "TO_VERIFY", "VERIFY"].includes((i.status || "").toUpperCase())).length,
+    }
+
     if (loading) {
         return (
             <div className="flex h-96 items-center justify-center">
@@ -186,52 +309,152 @@ function BankListPageContent() {
 
     return (
         <div className="container mx-auto py-6 space-y-6">
-            <UploadBankPage onUpload={handleUpload} onViewBankStatement={() => {}} />
+            <Tabs defaultValue="bank" onValueChange={handleTabChange}>
+                {/* Tab switcher */}
+                <TabsList className="h-11 bg-card/50 border border-border/50 p-1 rounded-xl w-fit">
+                    <TabsTrigger
+                        value="bank"
+                        className="flex items-center gap-2 px-5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                    >
+                        <Building2 className="h-4 w-4" />
+                        Relevés Bancaires
+                        {statements.length > 0 && (
+                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                                {statements.length}
+                            </span>
+                        )}
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="invoices"
+                        className="flex items-center gap-2 px-5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                    >
+                        <FileText className="h-4 w-4" />
+                        Factures
+                        {invoices.length > 0 && (
+                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                                {invoices.length}
+                            </span>
+                        )}
+                    </TabsTrigger>
+                </TabsList>
 
-            <Card className="border-border/50 bg-card/50">
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle className="text-2xl">Liste des Relevés Bancaires</CardTitle>
-                            <CardDescription>
-                                {filteredStatements.length} relevé{filteredStatements.length > 1 ? "s" : ""} affiché{filteredStatements.length > 1 ? "s" : ""}
-                            </CardDescription>
-                        </div>
-                        <Button variant="destructive" size="sm" onClick={handleDeleteAll} disabled={statements.length === 0}>
-                            Tout supprimer
+                {/* ── Bank tab ── */}
+                <TabsContent value="bank" className="space-y-6 mt-6">
+                    <UploadBankPage onUpload={handleUpload} onViewBankStatement={() => {}} />
+
+                    <Card className="border-border/50 bg-card/50">
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-2xl">Liste des Relevés Bancaires</CardTitle>
+                                    <CardDescription>
+                                        {filteredStatements.length} relevé{filteredStatements.length > 1 ? "s" : ""} affiché{filteredStatements.length > 1 ? "s" : ""}
+                                    </CardDescription>
+                                </div>
+                                <Button variant="destructive" size="sm" onClick={handleDeleteAll} disabled={statements.length === 0}>
+                                    Tout supprimer
+                                </Button>
+                            </div>
+                        </CardHeader>
+                    </Card>
+
+                    <div className="flex flex-wrap gap-2">
+                        <Button variant={statusFilter === "all" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("all")}>
+                            Tous
+                        </Button>
+                        <Button variant={statusFilter === "pending" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("pending")}>
+                            À traiter
+                        </Button>
+                        <Button variant={statusFilter === "validated" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("validated")}>
+                            Validés
+                        </Button>
+                        <Button variant={statusFilter === "accounted" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("accounted")}>
+                            Comptabilisés
                         </Button>
                     </div>
-                </CardHeader>
-            </Card>
 
-            <div className="flex flex-wrap gap-2">
-                <Button variant={statusFilter === "all" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("all")}>
-                    Tous
-                </Button>
-                <Button variant={statusFilter === "pending" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("pending")}>
-                    À traiter
-                </Button>
-                <Button variant={statusFilter === "validated" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("validated")}>
-                    Validés
-                </Button>
-                <Button variant={statusFilter === "accounted" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("accounted")}>
-                    Comptabilisés
-                </Button>
-            </div>
+                    <BankStatementTable
+                        statements={filteredStatements}
+                        onView={handleView}
+                        onDelete={handleDelete}
+                        onValidate={handleValidate}
+                        onMarkAsAccounted={handleMarkAsAccounted}
+                        onReprocess={handleReprocess}
+                        onUpdateStatement={(updated) => {
+                            setStatements((prev) =>
+                                prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s))
+                            )
+                        }}
+                    />
+                </TabsContent>
 
-            <BankStatementTable
-                statements={filteredStatements}
-                onView={handleView}
-                onDelete={handleDelete}
-                onValidate={handleValidate}
-                onMarkAsAccounted={handleMarkAsAccounted}
-                onReprocess={handleReprocess}
-                onUpdateStatement={(updated) => {
-                    setStatements((prev) =>
-                        prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s))
-                    )
-                }}
-            />
+                {/* ── Invoices tab ── */}
+                <TabsContent value="invoices" className="space-y-6 mt-6">
+                    <UploadInvoicePage onUpload={handleInvoiceUpload} />
+
+                    <Card className="border-border/50 bg-card/50">
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-2xl">Liste des Factures</CardTitle>
+                                    <CardDescription>
+                                        {filteredInvoices.length} facture{filteredInvoices.length > 1 ? "s" : ""} affichée{filteredInvoices.length > 1 ? "s" : ""}
+                                    </CardDescription>
+                                </div>
+                                <Button variant="destructive" size="sm" onClick={handleInvoiceDeleteAll} disabled={invoices.length === 0}>
+                                    Tout supprimer
+                                </Button>
+                            </div>
+                        </CardHeader>
+                    </Card>
+
+                    {invoicesLoading ? (
+                        <div className="flex h-48 items-center justify-center">
+                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        </div>
+                    ) : (
+                        <>
+                            <div className="flex flex-wrap gap-2">
+                                {([
+                                    { key: "all",       label: "Toutes",         count: invoiceCounts.all },
+                                    { key: "pending",   label: "En attente",     count: invoiceCounts.pending },
+                                    { key: "ready",     label: "Prêt à valider", count: invoiceCounts.ready },
+                                    { key: "validated", label: "Validées",       count: invoiceCounts.validated },
+                                    { key: "error",     label: "Erreurs",        count: invoiceCounts.error },
+                                ] as const).map(({ key, label, count }) => (
+                                    <Button
+                                        key={key}
+                                        variant={invoiceStatusFilter === key ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => setInvoiceStatusFilter(key)}
+                                        className="gap-2"
+                                    >
+                                        {label}
+                                        {count > 0 && (
+                                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                                                invoiceStatusFilter === key
+                                                    ? "bg-white/20 text-white"
+                                                    : "bg-muted text-muted-foreground"
+                                            }`}>
+                                                {count}
+                                            </span>
+                                        )}
+                                    </Button>
+                                ))}
+                            </div>
+
+                            <InvoiceTable
+                                invoices={filteredInvoices}
+                                onView={handleInvoiceView}
+                                onDelete={handleInvoiceDelete}
+                                onProcess={handleInvoiceProcess}
+                                onValidate={handleInvoiceValidate}
+                                onComptabiliser={handleInvoiceComptabiliser}
+                            />
+                        </>
+                    )}
+                </TabsContent>
+            </Tabs>
         </div>
     )
 }

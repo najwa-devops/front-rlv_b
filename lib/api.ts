@@ -34,7 +34,7 @@ export type UpsertAccountingConfigRequest = Omit<AccountingConfigDto, "id">
 async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const headers = new Headers(init?.headers)
 
-  const response = await fetch(input, { ...init, headers })
+  const response = await fetch(input, { ...init, headers, credentials: "include" })
 
   if (!response.ok) return response
 

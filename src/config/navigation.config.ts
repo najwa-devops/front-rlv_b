@@ -1,7 +1,8 @@
 import {
     Building2,
     List,
-    ChevronLeft
+    ChevronLeft,
+    FileText,
 } from "lucide-react";
 import { UserRole } from "@/src/types";
 
@@ -26,7 +27,16 @@ export const GLOBAL_NAV_CONFIG: Record<UserRole, NavItemConfig[]> = {
             children: [
                 { id: "bank-list", href: "/bank/list", label: "Liste des relevés", icon: List, badgeKey: "pendingCount" },
             ]
-        }
+        },
+        {
+            id: "invoices",
+            href: "#",
+            label: "Factures",
+            icon: FileText,
+            children: [
+                { id: "invoice-list", href: "/invoices/list", label: "Liste des factures", icon: List },
+            ]
+        },
     ],
     COMPTABLE: [
         {
@@ -37,7 +47,16 @@ export const GLOBAL_NAV_CONFIG: Record<UserRole, NavItemConfig[]> = {
             children: [
                 { id: "bank-list", href: "/bank/list", label: "Liste des relevés", icon: List, badgeKey: "pendingCount" },
             ]
-        }
+        },
+        {
+            id: "invoices",
+            href: "#",
+            label: "Factures",
+            icon: FileText,
+            children: [
+                { id: "invoice-list", href: "/invoices/list", label: "Liste des factures", icon: List },
+            ]
+        },
     ],
     FOURNISSEUR: [
         {
@@ -48,11 +67,20 @@ export const GLOBAL_NAV_CONFIG: Record<UserRole, NavItemConfig[]> = {
             children: [
                 { id: "bank-list", href: "/bank/list", label: "Liste des relevés", icon: List, badgeKey: "pendingCount" },
             ]
-        }
+        },
+        {
+            id: "invoices",
+            href: "#",
+            label: "Factures",
+            icon: FileText,
+            children: [
+                { id: "invoice-list", href: "/invoices/list", label: "Liste des factures", icon: List },
+            ]
+        },
     ]
 };
 
-// Navigation contextuelle dossier: Banking uniquement
+// Navigation contextuelle dossier: Banking + Factures
 export const getDossierNavConfig = (_dossierId: string | number): NavItemConfig[] => [
     { id: "back", href: "/bank/list", label: "Retour banque", icon: ChevronLeft, roles: ["COMPTABLE", "SUPER_ADMIN", "FOURNISSEUR"] },
     {
@@ -65,12 +93,24 @@ export const getDossierNavConfig = (_dossierId: string | number): NavItemConfig[
             { id: "bank-list", href: "/bank/list", label: "Liste des relevés", icon: List, badgeKey: "pendingCount", roles: ["COMPTABLE", "SUPER_ADMIN", "FOURNISSEUR"] },
         ]
     },
+    {
+        id: "invoices",
+        href: "#",
+        label: "Factures",
+        icon: FileText,
+        roles: ["COMPTABLE", "SUPER_ADMIN", "FOURNISSEUR"],
+        children: [
+            { id: "invoice-list", href: "/invoices/list", label: "Liste des factures", icon: List, roles: ["COMPTABLE", "SUPER_ADMIN", "FOURNISSEUR"] },
+        ]
+    },
 ];
 
 export const ROUTE_METADATA: Record<string, { title: string; breadcrumb?: string }> = {
     "/login": { title: "Connexion", breadcrumb: "Connexion" },
     "/bank/list": { title: "Liste des Relevés Bancaires", breadcrumb: "Liste" },
     "/bank/ocr": { title: "Détails du relevé", breadcrumb: "OCR" },
+    "/invoices/list": { title: "Liste des Factures", breadcrumb: "Factures" },
+    "/invoices": { title: "Détails de la facture", breadcrumb: "Facture" },
 };
 
 export const getRouteMetadata = (pathname: string) => {
