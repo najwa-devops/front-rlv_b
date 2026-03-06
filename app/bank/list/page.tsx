@@ -309,37 +309,9 @@ function BankListPageContent() {
 
     return (
         <div className="container mx-auto py-6 space-y-6">
-            <Tabs defaultValue="bank" onValueChange={handleTabChange}>
-                {/* Tab switcher */}
-                <TabsList className="h-11 bg-card/50 border border-border/50 p-1 rounded-xl w-fit">
-                    <TabsTrigger
-                        value="bank"
-                        className="flex items-center gap-2 px-5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm"
-                    >
-                        <Building2 className="h-4 w-4" />
-                        Relevés Bancaires
-                        {statements.length > 0 && (
-                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
-                                {statements.length}
-                            </span>
-                        )}
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="invoices"
-                        className="flex items-center gap-2 px-5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm"
-                    >
-                        <FileText className="h-4 w-4" />
-                        Factures
-                        {invoices.length > 0 && (
-                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
-                                {invoices.length}
-                            </span>
-                        )}
-                    </TabsTrigger>
-                </TabsList>
+               
 
                 {/* ── Bank tab ── */}
-                <TabsContent value="bank" className="space-y-6 mt-6">
                     <UploadBankPage onUpload={handleUpload} onViewBankStatement={() => {}} />
 
                     <Card className="border-border/50 bg-card/50">
@@ -386,75 +358,8 @@ function BankListPageContent() {
                             )
                         }}
                     />
-                </TabsContent>
 
-                {/* ── Invoices tab ── */}
-                <TabsContent value="invoices" className="space-y-6 mt-6">
-                    <UploadInvoicePage onUpload={handleInvoiceUpload} />
-
-                    <Card className="border-border/50 bg-card/50">
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <CardTitle className="text-2xl">Liste des Factures</CardTitle>
-                                    <CardDescription>
-                                        {filteredInvoices.length} facture{filteredInvoices.length > 1 ? "s" : ""} affichée{filteredInvoices.length > 1 ? "s" : ""}
-                                    </CardDescription>
-                                </div>
-                                <Button variant="destructive" size="sm" onClick={handleInvoiceDeleteAll} disabled={invoices.length === 0}>
-                                    Tout supprimer
-                                </Button>
-                            </div>
-                        </CardHeader>
-                    </Card>
-
-                    {invoicesLoading ? (
-                        <div className="flex h-48 items-center justify-center">
-                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                        </div>
-                    ) : (
-                        <>
-                            <div className="flex flex-wrap gap-2">
-                                {([
-                                    { key: "all",       label: "Toutes",         count: invoiceCounts.all },
-                                    { key: "pending",   label: "En attente",     count: invoiceCounts.pending },
-                                    { key: "ready",     label: "Prêt à valider", count: invoiceCounts.ready },
-                                    { key: "validated", label: "Validées",       count: invoiceCounts.validated },
-                                    { key: "error",     label: "Erreurs",        count: invoiceCounts.error },
-                                ] as const).map(({ key, label, count }) => (
-                                    <Button
-                                        key={key}
-                                        variant={invoiceStatusFilter === key ? "default" : "outline"}
-                                        size="sm"
-                                        onClick={() => setInvoiceStatusFilter(key)}
-                                        className="gap-2"
-                                    >
-                                        {label}
-                                        {count > 0 && (
-                                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                                                invoiceStatusFilter === key
-                                                    ? "bg-white/20 text-white"
-                                                    : "bg-muted text-muted-foreground"
-                                            }`}>
-                                                {count}
-                                            </span>
-                                        )}
-                                    </Button>
-                                ))}
-                            </div>
-
-                            <InvoiceTable
-                                invoices={filteredInvoices}
-                                onView={handleInvoiceView}
-                                onDelete={handleInvoiceDelete}
-                                onProcess={handleInvoiceProcess}
-                                onValidate={handleInvoiceValidate}
-                                onComptabiliser={handleInvoiceComptabiliser}
-                            />
-                        </>
-                    )}
-                </TabsContent>
-            </Tabs>
+               
         </div>
     )
 }

@@ -1,6 +1,7 @@
-"use client"
+﻿"use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import dynamic from "next/dynamic"
 import { useParams, useRouter } from "next/navigation"
 import {
     Loader2,
@@ -12,14 +13,32 @@ import {
     ExternalLink,
     Tag,
     AlertCircle,
+    ZoomIn,
+    ZoomOut,
+    ChevronLeft,
+    ChevronRight,
+    Target,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { Input } from "@/components/ui/input"
 import { InvoiceService } from "@/src/api/services/invoice.service"
 import { InvoiceDto } from "@/src/types"
 import { toast } from "sonner"
+import "react-pdf/dist/Page/TextLayer.css"
+import "react-pdf/dist/Page/AnnotationLayer.css"
+
+const Document = dynamic(
+    () => import("react-pdf").then((mod) => mod.Document),
+    { ssr: false }
+)
+
+const Page = dynamic(
+    () => import("react-pdf").then((mod) => mod.Page),
+    { ssr: false }
+)
 
 function getStatusBadge(status: string | undefined) {
     switch ((status || "").toUpperCase()) {
@@ -28,20 +47,20 @@ function getStatusBadge(status: string | undefined) {
         case "PROCESSING":
             return <Badge className="bg-blue-500/10 text-blue-600 border-blue-400/30 animate-pulse">En cours</Badge>
         case "TREATED":
-            return <Badge className="bg-blue-700/10 text-blue-800 border-blue-700/30">Traité</Badge>
+            return <Badge className="bg-blue-700/10 text-blue-800 border-blue-700/30">TraitÃ©</Badge>
         case "READY_TO_VALIDATE":
-            return <Badge className="bg-emerald-400/10 text-emerald-500 border-emerald-400/30">Prêt à valider</Badge>
+            return <Badge className="bg-emerald-400/10 text-emerald-500 border-emerald-400/30">PrÃªt Ã  valider</Badge>
         case "VALIDATED":
-            return <Badge className="bg-emerald-600 text-white border-emerald-700">Validé</Badge>
+            return <Badge className="bg-emerald-600 text-white border-emerald-700">ValidÃ©</Badge>
         case "REJECTED":
-            return <Badge className="bg-destructive text-white border-destructive">Rejeté</Badge>
+            return <Badge className="bg-destructive text-white border-destructive">RejetÃ©</Badge>
         case "ERROR":
             return <Badge className="bg-destructive/10 text-destructive border-destructive/30">Erreur</Badge>
         case "TO_VERIFY":
         case "VERIFY":
-            return <Badge className="bg-orange-400/10 text-orange-500 border-orange-400/30">À vérifier</Badge>
+            return <Badge className="bg-orange-400/10 text-orange-500 border-orange-400/30">Ã€ vÃ©rifier</Badge>
         default:
-            return <Badge variant="outline">{status || "—"}</Badge>
+            return <Badge variant="outline">{status || "â€”"}</Badge>
     }
 }
 
@@ -49,10 +68,25 @@ function FieldRow({ label, value }: { label: string; value: React.ReactNode }) {
     return (
         <div className="flex items-start justify-between gap-4 py-2.5">
             <span className="text-sm text-muted-foreground shrink-0 w-40">{label}</span>
-            <span className="text-sm text-foreground text-right font-medium flex-1">{value ?? "—"}</span>
+            <span className="text-sm text-foreground text-right font-medium flex-1">{value ?? "â€”"}</span>
         </div>
     )
 }
+
+const EDITABLE_DETAIL_FIELDS = [
+    { id: "supplier", label: "Fournisseur", keys: ["supplier", "fournisseur", "supplierName"] },
+    { id: "invoiceDate", label: "Date Facture", keys: ["invoiceDate", "date", "dateFacture"] },
+    { id: "invoiceNumber", label: "NÂ° Facture", keys: ["invoiceNumber", "numeroFacture", "invoice_number"] },
+    { id: "amountHT", label: "Montant HT", keys: ["amountHT", "montantHT", "totalHT", "baseHT"] },
+    { id: "amountTVA", label: "Montant TVA", keys: ["amountTVA", "montantTVA", "tvaAmount", "tva"] },
+    { id: "amountTTC", label: "Montant TTC", keys: ["amountTTC", "montantTTC", "totalTTC", "total"] },
+    { id: "comptTier", label: "Compt Tier", keys: ["comptTier", "compteTier", "tierAccount", "compte_tier"] },
+    { id: "comptHt", label: "Compt HT", keys: ["comptHt", "compteHt", "accountHt", "compte_ht"] },
+    { id: "comptTva", label: "Compt TVA", keys: ["comptTva", "compteTva", "accountTva", "compte_tva"] },
+    { id: "ice", label: "ICE", keys: ["ice"] },
+    { id: "ifNumber", label: "IF", keys: ["ifNumber", "if", "taxId"] },
+    { id: "rcNumber", label: "RC", keys: ["rcNumber", "rc", "tradeRegister"] },
+]
 
 export default function InvoiceDetailPage() {
     const params = useParams()
@@ -63,6 +97,20 @@ export default function InvoiceDetailPage() {
     const [loading, setLoading] = useState(true)
     const [processing, setProcessing] = useState(false)
     const [validating, setValidating] = useState(false)
+    const [zoom, setZoom] = useState(100)
+    const [documentUrl, setDocumentUrl] = useState<string | null>(null)
+    const [isLoadingDocument, setIsLoadingDocument] = useState(true)
+    const [documentLoadError, setDocumentLoadError] = useState(false)
+    const [numPages, setNumPages] = useState(1)
+    const [pageNumber, setPageNumber] = useState(1)
+    const [editableDetails, setEditableDetails] = useState<Record<string, string>>({})
+    const [savingDetails, setSavingDetails] = useState(false)
+    const [activePickerFieldId, setActivePickerFieldId] = useState<string | null>(null)
+    const [isDrawingSelection, setIsDrawingSelection] = useState(false)
+    const [selectionRect, setSelectionRect] = useState<{ x: number; y: number; width: number; height: number } | null>(null)
+    const drawStartRef = useRef<{ x: number; y: number } | null>(null)
+    const viewerOverlayRef = useRef<HTMLDivElement | null>(null)
+    const pdfContainerRef = useRef<HTMLDivElement | null>(null)
 
     const load = async () => {
         try {
@@ -79,6 +127,13 @@ export default function InvoiceDetailPage() {
         if (id) load()
     }, [id])
 
+    useEffect(() => {
+        ; (async () => {
+            const { pdfjs } = await import("react-pdf")
+            pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`
+        })()
+    }, [])
+
     // Poll while processing
     useEffect(() => {
         if (!invoice) return
@@ -88,13 +143,69 @@ export default function InvoiceDetailPage() {
         return () => clearInterval(interval)
     }, [invoice?.status])
 
+    const fileUrl = invoice?.filePath
+        ? InvoiceService.getFileUrl(invoice.filename)
+        : null
+    const sourceName = invoice?.originalName || invoice?.filename || ""
+    const isPdf = Boolean(sourceName.match(/\.pdf(?:$|\?)/i))
+    const isImage = Boolean(sourceName.match(/\.(jpg|jpeg|png|gif|webp)(?:$|\?)/i))
+
+    useEffect(() => {
+        let cancelled = false
+        let objectUrl: string | null = null
+        const looksRenderable = Boolean(sourceName.match(/\.(pdf|jpg|jpeg|png|gif|webp)(?:$|\?)/i))
+
+        const loadDocument = async () => {
+            setPageNumber(1)
+            setNumPages(1)
+            setDocumentLoadError(false)
+            setIsLoadingDocument(looksRenderable)
+            setActivePickerFieldId(null)
+            setSelectionRect(null)
+            setIsDrawingSelection(false)
+
+            if (!invoice?.filename) {
+                setDocumentUrl(null)
+                return
+            }
+
+            try {
+                const blob = await InvoiceService.downloadFile(invoice.filename)
+                if (cancelled) return
+                objectUrl = URL.createObjectURL(blob)
+                setDocumentUrl(objectUrl)
+            } catch {
+                if (cancelled) return
+                setDocumentUrl(fileUrl)
+                setDocumentLoadError(true)
+            }
+        }
+
+        loadDocument()
+
+        return () => {
+            cancelled = true
+            if (objectUrl) URL.revokeObjectURL(objectUrl)
+        }
+    }, [invoice?.filename, sourceName, fileUrl])
+
+    useEffect(() => {
+        const source = invoice?.fieldsData || {}
+        const initialValues: Record<string, string> = {}
+        for (const field of EDITABLE_DETAIL_FIELDS) {
+            const value = pickFirstValue(source, field.keys)
+            initialValues[field.id] = value === "Ã¢â‚¬â€" || value === "ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â" ? "" : value
+        }
+        setEditableDetails(initialValues)
+    }, [invoice?.id, invoice?.updatedAt, invoice?.fieldsData])
+
     const handleProcess = async () => {
         if (!invoice) return
         setProcessing(true)
         try {
             const updated = await InvoiceService.process(invoice.id)
             setInvoice({ ...invoice, ...updated })
-            toast.success("Retraitement lancé")
+            toast.success("Retraitement lancÃ©")
             setTimeout(load, 1500)
         } catch {
             toast.error("Erreur lors du retraitement")
@@ -109,7 +220,7 @@ export default function InvoiceDetailPage() {
         try {
             const updated = await InvoiceService.validate(invoice.id)
             setInvoice({ ...invoice, ...updated })
-            toast.success("Facture validée")
+            toast.success("Facture validÃ©e")
         } catch {
             toast.error("Erreur lors de la validation")
         } finally {
@@ -122,11 +233,98 @@ export default function InvoiceDetailPage() {
         if (!confirm("Supprimer cette facture ?")) return
         try {
             await InvoiceService.delete(invoice.id)
-            toast.success("Facture supprimée")
+            toast.success("Facture supprimÃ©e")
             router.push("/invoices/list")
         } catch {
             toast.error("Erreur lors de la suppression")
         }
+    }
+
+    const handleSaveDetails = async () => {
+        if (!invoice) return
+        setSavingDetails(true)
+        try {
+            const payload: Record<string, string> = {}
+            for (const field of EDITABLE_DETAIL_FIELDS) {
+                payload[field.keys[0]] = editableDetails[field.id] ?? ""
+            }
+            const updated = await InvoiceService.updateFields(invoice.id, payload)
+            setInvoice(updated)
+            toast.success("Details de la facture enregistres")
+        } catch {
+            toast.error("Erreur lors de l'enregistrement des details")
+        } finally {
+            setSavingDetails(false)
+        }
+    }
+
+    const handlePickerMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!activePickerFieldId || !isPdf || !viewerOverlayRef.current) return
+        e.preventDefault()
+        const rect = viewerOverlayRef.current.getBoundingClientRect()
+        const scale = zoom / 100
+        const startX = (e.clientX - rect.left) / scale
+        const startY = (e.clientY - rect.top) / scale
+        drawStartRef.current = { x: startX, y: startY }
+        setSelectionRect({ x: startX, y: startY, width: 0, height: 0 })
+        setIsDrawingSelection(true)
+    }
+
+    const handlePickerMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!isDrawingSelection || !drawStartRef.current || !viewerOverlayRef.current) return
+        e.preventDefault()
+        const rect = viewerOverlayRef.current.getBoundingClientRect()
+        const scale = zoom / 100
+        const currentX = (e.clientX - rect.left) / scale
+        const currentY = (e.clientY - rect.top) / scale
+        const x = Math.min(drawStartRef.current.x, currentX)
+        const y = Math.min(drawStartRef.current.y, currentY)
+        const width = Math.abs(currentX - drawStartRef.current.x)
+        const height = Math.abs(currentY - drawStartRef.current.y)
+        setSelectionRect({ x, y, width, height })
+    }
+
+    const handlePickerMouseUp = () => {
+        if (!isDrawingSelection || !selectionRect || !viewerOverlayRef.current || !pdfContainerRef.current || !activePickerFieldId) {
+            setIsDrawingSelection(false)
+            drawStartRef.current = null
+            return
+        }
+
+        const overlayRect = viewerOverlayRef.current.getBoundingClientRect()
+        const scale = zoom / 100
+        const selectedClientRect = {
+            left: overlayRect.left + selectionRect.x * scale,
+            top: overlayRect.top + selectionRect.y * scale,
+            right: overlayRect.left + (selectionRect.x + selectionRect.width) * scale,
+            bottom: overlayRect.top + (selectionRect.y + selectionRect.height) * scale,
+        }
+
+        const spans = Array.from(
+            pdfContainerRef.current.querySelectorAll(".react-pdf__Page__textLayer span")
+        ) as HTMLSpanElement[]
+
+        const intersects = (a: DOMRect, b: { left: number; top: number; right: number; bottom: number }) =>
+            a.right >= b.left && a.left <= b.right && a.bottom >= b.top && a.top <= b.bottom
+
+        const text = spans
+            .filter((span) => intersects(span.getBoundingClientRect(), selectedClientRect))
+            .map((span) => span.textContent || "")
+            .join(" ")
+            .replace(/\s+/g, " ")
+            .trim()
+
+        if (text) {
+            setEditableDetails((prev) => ({ ...prev, [activePickerFieldId]: text }))
+            toast.success("Texte extrait depuis la zone selectionnee")
+        } else {
+            toast.error("Aucun texte detecte dans la zone selectionnee")
+        }
+
+        setIsDrawingSelection(false)
+        drawStartRef.current = null
+        setSelectionRect(null)
+        setActivePickerFieldId(null)
     }
 
     if (loading) {
@@ -145,7 +343,7 @@ export default function InvoiceDetailPage() {
                         <AlertCircle className="h-10 w-10 text-destructive" />
                         <p className="text-foreground font-medium">Facture introuvable</p>
                         <Button variant="outline" onClick={() => router.push("/invoices/list")}>
-                            Retour à la liste
+                            Retour Ã  la liste
                         </Button>
                     </CardContent>
                 </Card>
@@ -157,12 +355,19 @@ export default function InvoiceDetailPage() {
     const canProcess = !["VALIDATED", "REJECTED"].includes(statusUp)
     const canValidate = statusUp === "READY_TO_VALIDATE" || invoice.canValidate
     const confidence = invoice.overallConfidence ?? invoice.averageConfidence
+    const fieldsData = invoice.fieldsData || {}
+
+    const requestedRows = EDITABLE_DETAIL_FIELDS.map((field) => ({
+        id: field.id,
+        label: field.label,
+        value: editableDetails[field.id] ?? "",
+    }))
 
     // Build field rows from fieldsData
     const knownFields: { key: string; label: string }[] = [
-        { key: "invoiceNumber",    label: "N° Facture" },
-        { key: "numeroFacture",    label: "N° Facture" },
-        { key: "invoice_number",   label: "N° Facture" },
+        { key: "invoiceNumber",    label: "NÂ° Facture" },
+        { key: "numeroFacture",    label: "NÂ° Facture" },
+        { key: "invoice_number",   label: "NÂ° Facture" },
         { key: "supplier",         label: "Fournisseur" },
         { key: "fournisseur",      label: "Fournisseur" },
         { key: "supplierName",     label: "Fournisseur" },
@@ -181,7 +386,7 @@ export default function InvoiceDetailPage() {
         { key: "rcNumber",         label: "RC" },
         { key: "address",          label: "Adresse" },
         { key: "city",             label: "Ville" },
-        { key: "phone",            label: "Téléphone" },
+        { key: "phone",            label: "TÃ©lÃ©phone" },
         { key: "email",            label: "Email" },
     ]
 
@@ -189,20 +394,16 @@ export default function InvoiceDetailPage() {
     const fieldRows: { label: string; value: any }[] = []
 
     for (const { key, label } of knownFields) {
-        if (invoice.fieldsData?.[key] !== undefined && !seenKeys.has(label)) {
-            fieldRows.push({ label, value: invoice.fieldsData[key] })
+        if (fieldsData[key] !== undefined && !seenKeys.has(label)) {
+            fieldRows.push({ label, value: fieldsData[key] })
             seenKeys.add(label)
         }
     }
 
     // Remaining unknown fields
-    const extraRows = Object.entries(invoice.fieldsData || {})
+    const extraRows = Object.entries(fieldsData)
         .filter(([k]) => !knownFields.some((f) => f.key === k))
         .map(([k, v]) => ({ label: k, value: v }))
-
-    const fileUrl = invoice.filePath
-        ? InvoiceService.getFileUrl(invoice.filename)
-        : null
 
     return (
         <div className="container mx-auto py-6 space-y-6">
@@ -274,143 +475,231 @@ export default function InvoiceDetailPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
                 {/* Left: Extracted Fields */}
-                <div className="lg:col-span-2 space-y-6">
+                <div className="xl:col-span-2 space-y-6">
                     <Card className="border-border/50 bg-card/50">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-base">
                                 <FileText className="h-4 w-4 text-primary" />
-                                Données extraites
+                                Details de la facture
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            {fieldRows.length === 0 && extraRows.length === 0 ? (
-                                <p className="text-sm text-muted-foreground py-4 text-center">
-                                    Aucun champ extrait pour le moment
-                                </p>
-                            ) : (
-                                <div className="divide-y divide-border/50">
-                                    {fieldRows.map(({ label, value }) => (
-                                        <FieldRow key={label} label={label} value={String(value)} />
-                                    ))}
-                                    {extraRows.length > 0 && (
-                                        <>
-                                            {fieldRows.length > 0 && <Separator className="my-2" />}
-                                            {extraRows.map(({ label, value }) => (
-                                                <FieldRow key={label} label={label} value={String(value)} />
-                                            ))}
-                                        </>
+                            <div className="space-y-3">
+                                {requestedRows.map((row) => (
+                                    <div key={row.id} className="space-y-1">
+                                        <label className="text-xs text-muted-foreground">{row.label}</label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                value={row.value}
+                                                onChange={(e) =>
+                                                    setEditableDetails((prev) => ({
+                                                        ...prev,
+                                                        [row.id]: e.target.value,
+                                                    }))
+                                                }
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant={activePickerFieldId === row.id ? "default" : "outline"}
+                                                size="icon"
+                                                className="h-9 w-9 shrink-0"
+                                                onClick={() => {
+                                                    if (!isPdf) {
+                                                        toast.error("Selection par zone disponible uniquement pour les PDF")
+                                                        return
+                                                    }
+                                                    setSelectionRect(null)
+                                                    setIsDrawingSelection(false)
+                                                    setActivePickerFieldId((prev) => (prev === row.id ? null : row.id))
+                                                }}
+                                                title="Selectionner une zone sur le PDF"
+                                            >
+                                                <Target className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="pt-4">
+                                <Button
+                                    onClick={handleSaveDetails}
+                                    disabled={savingDetails}
+                                    className="w-full gap-2"
+                                >
+                                    {savingDetails && <Loader2 className="h-4 w-4 animate-spin" />}
+                                    Enregistrer les details
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    
+
+                   
+                  
+                </div>
+
+                {/* Right: Document */}
+                <div className="xl:col-span-3">
+                    <Card className="border-border/50 bg-card/50 h-[calc(100vh-170px)] overflow-hidden flex flex-col xl:sticky xl:top-6">
+                        <CardHeader className="py-3 px-4 border-b border-border/50">
+                            <div className="flex items-center justify-between gap-2">
+                                <CardTitle className="flex items-center gap-2 text-base">
+                                    <FileText className="h-4 w-4 text-primary" />
+                                    Document
+                                </CardTitle>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        onClick={() => setZoom((z) => Math.max(50, z - 25))}
+                                    >
+                                        <ZoomOut className="h-4 w-4" />
+                                    </Button>
+                                    <span className="text-xs w-9 text-center">{zoom}%</span>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        onClick={() => setZoom((z) => Math.min(200, z + 25))}
+                                    >
+                                        <ZoomIn className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="flex-1 overflow-auto p-4 bg-muted/20">
+                            {activePickerFieldId && isPdf && (
+                                <div className="mb-3 text-xs text-primary">
+                                    Mode selection actif: tracez un rectangle sur le PDF pour remplir le champ.
+                                </div>
+                            )}
+                            {!documentUrl && (
+                                <div className="h-full min-h-80 flex items-center justify-center text-sm text-muted-foreground text-center">
+                                    Document indisponible pour cette facture
+                                </div>
+                            )}
+
+                            {documentUrl && (
+                                <div
+                                    ref={viewerOverlayRef}
+                                    className={
+                                        activePickerFieldId && isPdf
+                                            ? "relative inline-block origin-top-left select-none [&_.react-pdf__Page__textLayer]:pointer-events-none [&_.react-pdf__Page__textLayer]:select-none"
+                                            : "relative inline-block origin-top-left"
+                                    }
+                                    style={{ transform: `scale(${zoom / 100})` }}
+                                    onMouseDown={handlePickerMouseDown}
+                                    onMouseMove={handlePickerMouseMove}
+                                    onMouseUp={handlePickerMouseUp}
+                                    onMouseLeave={handlePickerMouseUp}
+                                >
+                                    {isLoadingDocument && (
+                                        <div className="flex h-96 w-full items-center justify-center">
+                                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                        </div>
+                                    )}
+
+                                    {isPdf && (
+                                        <div ref={pdfContainerRef}>
+                                            <Document
+                                                file={documentUrl}
+                                                onLoadSuccess={({ numPages }) => {
+                                                    setNumPages(numPages)
+                                                    setIsLoadingDocument(false)
+                                                }}
+                                                onLoadError={() => {
+                                                    setIsLoadingDocument(false)
+                                                    setDocumentLoadError(true)
+                                                }}
+                                            >
+                                                <Page pageNumber={pageNumber} width={850} />
+                                            </Document>
+                                        </div>
+                                    )}
+
+                                    {isImage && (
+                                        <img
+                                            src={documentUrl}
+                                            alt={invoice.originalName || invoice.filename}
+                                            className="max-w-full h-auto rounded-md border border-border/50"
+                                            onLoad={() => setIsLoadingDocument(false)}
+                                            onError={() => setIsLoadingDocument(false)}
+                                        />
+                                    )}
+
+                                    {!isPdf && !isImage && (
+                                        <div className="p-4 text-sm text-muted-foreground">
+                                            Apercu non supporte pour ce format. Utilisez "Voir fichier".
+                                        </div>
+                                    )}
+
+                                    {documentLoadError && (
+                                        <div className="p-4 text-sm text-destructive">
+                                            Echec de chargement dans l'apercu. Utilisez "Voir fichier".
+                                        </div>
+                                    )}
+
+                                    {selectionRect && activePickerFieldId && isPdf && (
+                                        <div
+                                            className="absolute border-2 border-primary bg-primary/15 pointer-events-none"
+                                            style={{
+                                                left: selectionRect.x,
+                                                top: selectionRect.y,
+                                                width: selectionRect.width,
+                                                height: selectionRect.height,
+                                            }}
+                                        />
                                     )}
                                 </div>
                             )}
                         </CardContent>
-                    </Card>
 
-                    {/* Missing / Low Confidence Fields */}
-                    {((invoice.missingFields?.length ?? 0) > 0 || (invoice.lowConfidenceFields?.length ?? 0) > 0) && (
-                        <Card className="border-orange-400/30 bg-orange-400/5">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-base text-orange-500">
-                                    <AlertCircle className="h-4 w-4" />
-                                    Champs à vérifier
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {(invoice.missingFields?.length ?? 0) > 0 && (
-                                    <div>
-                                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                                            Champs manquants
-                                        </p>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {invoice.missingFields!.map((f) => (
-                                                <Badge key={f} variant="outline" className="text-xs border-destructive/30 text-destructive">
-                                                    {f}
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                                {(invoice.lowConfidenceFields?.length ?? 0) > 0 && (
-                                    <div>
-                                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                                            Faible confiance
-                                        </p>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {invoice.lowConfidenceFields!.map((f) => (
-                                                <Badge key={f} variant="outline" className="text-xs border-orange-400/30 text-orange-500">
-                                                    {f}
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    )}
-                </div>
-
-                {/* Right: Metadata */}
-                <div className="space-y-6">
-                    <Card className="border-border/50 bg-card/50">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-base">
-                                <Tag className="h-4 w-4 text-primary" />
-                                Informations
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="divide-y divide-border/50">
-                                <FieldRow label="Statut" value={getStatusBadge(invoice.status)} />
-                                <FieldRow
-                                    label="Confiance"
-                                    value={
-                                        confidence !== undefined ? (
-                                            <span className={
-                                                confidence >= 0.8 ? "text-emerald-500" :
-                                                confidence >= 0.5 ? "text-orange-500" : "text-destructive"
-                                            }>
-                                                {Math.round(confidence * 100)}%
-                                            </span>
-                                        ) : "—"
-                                    }
-                                />
-                                <FieldRow
-                                    label="Template"
-                                    value={
-                                        invoice.templateName ? (
-                                            <span className="text-xs bg-muted/50 px-2 py-0.5 rounded-full">
-                                                {invoice.templateName}
-                                            </span>
-                                        ) : "—"
-                                    }
-                                />
-                                <FieldRow
-                                    label="Méthode"
-                                    value={invoice.extractionMethod || "—"}
-                                />
-                                <FieldRow
-                                    label="Créé le"
-                                    value={invoice.createdAt
-                                        ? new Date(invoice.createdAt).toLocaleDateString("fr-FR")
-                                        : "—"
-                                    }
-                                />
-                                <FieldRow
-                                    label="Validé le"
-                                    value={invoice.validatedAt
-                                        ? new Date(invoice.validatedAt).toLocaleDateString("fr-FR")
-                                        : "—"
-                                    }
-                                />
-                                {invoice.validatedBy && (
-                                    <FieldRow label="Validé par" value={invoice.validatedBy} />
-                                )}
+                        {numPages > 1 && (
+                            <div className="p-2 border-t border-border/50 flex items-center justify-center gap-3">
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
+                                    disabled={pageNumber === 1}
+                                    className="gap-1.5"
+                                >
+                                    <ChevronLeft className="h-4 w-4" />
+                                    Precedent
+                                </Button>
+                                <span className="text-xs text-muted-foreground">
+                                    Page {pageNumber} / {numPages}
+                                </span>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => setPageNumber((p) => Math.min(numPages, p + 1))}
+                                    disabled={pageNumber === numPages}
+                                    className="gap-1.5"
+                                >
+                                    Suivant
+                                    <ChevronRight className="h-4 w-4" />
+                                </Button>
                             </div>
-                        </CardContent>
+                        )}
                     </Card>
                 </div>
             </div>
         </div>
     )
 }
+
+function pickFirstValue(source: Record<string, any>, keys: string[]) {
+    for (const key of keys) {
+        const value = source[key]
+        if (value !== undefined && value !== null && String(value).trim() !== "") {
+            return String(value)
+        }
+    }
+    return "—"
+}
+
+

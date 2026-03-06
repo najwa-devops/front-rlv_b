@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
+import Link from "next/link"
 import { useAuth } from "@/hooks/use-auth"
 import { getRouteMetadata } from "@/src/config/navigation.config"
 import { Button } from "@/components/ui/button"
@@ -36,6 +37,28 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                     </div>
                     <span className="font-bold text-foreground tracking-tight">BankingOCR</span>
                     <span className="text-xs text-muted-foreground hidden sm:block">— Relevés Bancaires</span>
+                    <div className="hidden md:flex items-center gap-2 ml-3 pl-3 border-l border-border/50">
+                        <Link
+                            href="/bank/list"
+                            className={`text-xs px-2 py-1 rounded-md transition-colors ${
+                                pathname.startsWith("/bank")
+                                    ? "bg-primary/15 text-primary"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                            }`}
+                        >
+                            Relevés Bancaires
+                        </Link>
+                        <Link
+                            href="/invoices/list"
+                            className={`text-xs px-2 py-1 rounded-md transition-colors ${
+                                pathname.startsWith("/invoices")
+                                    ? "bg-primary/15 text-primary"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                            }`}
+                        >
+                            Invoices
+                        </Link>
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-3">

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { Suspense, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
@@ -17,7 +17,7 @@ import { toast } from "sonner"
 type StatusFilter = "all" | "pending" | "ready" | "validated" | "error"
 
 function formatDate(dateStr: string | undefined): string {
-    if (!dateStr) return "—"
+    if (!dateStr) return "â€”"
     try {
         return new Date(dateStr).toLocaleDateString("fr-FR", {
             day: "2-digit",
@@ -25,12 +25,12 @@ function formatDate(dateStr: string | undefined): string {
             year: "numeric",
         })
     } catch {
-        return "—"
+        return "â€”"
     }
 }
 
 function formatAmount(val: any): string {
-    if (val === null || val === undefined || val === "") return "—"
+    if (val === null || val === undefined || val === "") return "â€”"
     const n = Number(val)
     if (isNaN(n)) return String(val)
     return n.toLocaleString("fr-FR", { minimumFractionDigits: 2 })
@@ -88,7 +88,7 @@ function InvoiceListPageContent() {
             } else {
                 await InvoiceService.uploadBatch(files)
             }
-            toast.success(`${files.length} facture${files.length > 1 ? "s" : ""} importée${files.length > 1 ? "s" : ""}`)
+            toast.success(`${files.length} facture${files.length > 1 ? "s" : ""} importÃ©e${files.length > 1 ? "s" : ""}`)
             await loadData()
         } catch {
             toast.error("Erreur lors de l'import")
@@ -103,7 +103,7 @@ function InvoiceListPageContent() {
         try {
             await InvoiceService.delete(id)
             setInvoices((prev) => prev.filter((inv) => inv.id !== id))
-            toast.success("Facture supprimée")
+            toast.success("Facture supprimÃ©e")
         } catch {
             toast.error("Erreur lors de la suppression")
         }
@@ -113,7 +113,7 @@ function InvoiceListPageContent() {
         try {
             const updated = await InvoiceService.process(id)
             setInvoices((prev) => prev.map((inv) => (inv.id === id ? { ...inv, ...updated } : inv)))
-            toast.success("Traitement lancé")
+            toast.success("Traitement lancÃ©")
         } catch {
             toast.error("Erreur lors du retraitement")
         }
@@ -123,7 +123,7 @@ function InvoiceListPageContent() {
         try {
             const updated = await InvoiceService.validate(id)
             setInvoices((prev) => prev.map((inv) => (inv.id === id ? { ...inv, ...updated } : inv)))
-            toast.success("Facture validée")
+            toast.success("Facture validÃ©e")
         } catch {
             toast.error("Erreur lors de la validation")
         }
@@ -133,12 +133,13 @@ function InvoiceListPageContent() {
         try {
             await InvoiceService.comptabiliser(id)
             setInvoices((prev) => prev.map((inv) => (inv.id === id ? { ...inv, accounted: true } : inv)))
-            toast.success("Facture comptabilisée")
+            toast.success("Facture comptabilisÃ©e")
         } catch (err: any) {
-            const details = err?.response?.data?.details
+            const details = err?.details?.details || err?.details
+            const apiError = err?.details?.error || err?.details?.message || err?.message
             const msg = details
-                ? details.join(", ")
-                : (err?.response?.data?.error || "Erreur lors de la comptabilisation")
+                ? (Array.isArray(details) ? details.join(", ") : String(details))
+                : (apiError || "Erreur lors de la comptabilisation")
             toast.error(msg)
         }
     }
@@ -148,7 +149,7 @@ function InvoiceListPageContent() {
         try {
             await InvoiceService.bulkDelete(invoices.map((inv) => inv.id))
             await loadData()
-            toast.success("Toutes les factures ont été supprimées")
+            toast.success("Toutes les factures ont Ã©tÃ© supprimÃ©es")
         } catch {
             toast.error("Erreur lors de la suppression globale")
         }
@@ -173,36 +174,8 @@ function InvoiceListPageContent() {
 
     return (
         <div className="container mx-auto py-6 space-y-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="h-11 bg-muted/50 border border-border/50 p-1">
-                    <TabsTrigger
-                        value="factures"
-                        className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
-                    >
-                        <FileText className="h-4 w-4" />
-                        Factures
-                        {counts.all > 0 && (
-                            <Badge variant="secondary" className="h-5 min-w-5 px-1.5 text-xs">
-                                {counts.all}
-                            </Badge>
-                        )}
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="comptabilisees"
-                        className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
-                    >
-                        <BookCheck className="h-4 w-4" />
-                        Comptabilisées
-                        {counts.accounted > 0 && (
-                            <Badge variant="secondary" className="h-5 min-w-5 px-1.5 text-xs">
-                                {counts.accounted}
-                            </Badge>
-                        )}
-                    </TabsTrigger>
-                </TabsList>
+               
 
-                {/* ── TAB: Factures ─────────────────────────────────────── */}
-                <TabsContent value="factures" className="space-y-6 mt-6">
                     <UploadInvoicePage onUpload={handleUpload} />
 
                     <Card className="border-border/50 bg-card/50">
@@ -211,7 +184,7 @@ function InvoiceListPageContent() {
                                 <div>
                                     <CardTitle className="text-2xl">Liste des Factures</CardTitle>
                                     <CardDescription>
-                                        {filteredInvoices.length} facture{filteredInvoices.length !== 1 ? "s" : ""} affichée{filteredInvoices.length !== 1 ? "s" : ""}
+                                        {filteredInvoices.length} facture{filteredInvoices.length !== 1 ? "s" : ""} affichÃ©e{filteredInvoices.length !== 1 ? "s" : ""}
                                     </CardDescription>
                                 </div>
                                 <Button
@@ -231,8 +204,8 @@ function InvoiceListPageContent() {
                         {([
                             { key: "all",       label: "Toutes",          count: counts.all },
                             { key: "pending",   label: "En attente",       count: counts.pending },
-                            { key: "ready",     label: "Prêt à valider",   count: counts.ready },
-                            { key: "validated", label: "Validées",         count: counts.validated },
+                            { key: "ready",     label: "PrÃªt Ã  valider",   count: counts.ready },
+                            { key: "validated", label: "ValidÃ©es",         count: counts.validated },
                             { key: "error",     label: "Erreurs",          count: counts.error },
                         ] as const).map(({ key, label, count }) => (
                             <Button
@@ -264,106 +237,8 @@ function InvoiceListPageContent() {
                         onValidate={handleValidate}
                         onComptabiliser={handleComptabiliser}
                     />
-                </TabsContent>
 
-                {/* ── TAB: Comptabilisées ───────────────────────────────── */}
-                <TabsContent value="comptabilisees" className="space-y-6 mt-6">
-                    {accountedInvoices.length === 0 ? (
-                        <Card className="border-border/50 bg-card/50">
-                            <CardContent className="flex flex-col items-center justify-center py-20 gap-4">
-                                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/50">
-                                    <BookCheck className="h-8 w-8 text-muted-foreground" />
-                                </div>
-                                <div className="text-center">
-                                    <p className="font-medium text-foreground">Aucune facture comptabilisée</p>
-                                    <p className="text-sm text-muted-foreground mt-1">
-                                        Validez puis comptabilisez vos factures depuis l'onglet Factures
-                                    </p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ) : (
-                        <Card className="border-border/50 bg-card/50">
-                            <CardHeader>
-                                <CardTitle className="text-xl">Factures Comptabilisées</CardTitle>
-                                <CardDescription>
-                                    {accountedInvoices.length} facture{accountedInvoices.length !== 1 ? "s" : ""} comptabilisée{accountedInvoices.length !== 1 ? "s" : ""}
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="p-0">
-                                <div className="overflow-x-auto">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow className="border-border/50 hover:bg-transparent">
-                                                <TableHead className="text-muted-foreground font-medium">Fichier</TableHead>
-                                                <TableHead className="text-muted-foreground font-medium">Fournisseur</TableHead>
-                                                <TableHead className="text-muted-foreground font-medium">N° Facture</TableHead>
-                                                <TableHead className="text-muted-foreground font-medium text-right">Montant HT</TableHead>
-                                                <TableHead className="text-muted-foreground font-medium text-right">Montant TVA</TableHead>
-                                                <TableHead className="text-muted-foreground font-medium text-right">Montant TTC</TableHead>
-                                                <TableHead className="text-muted-foreground font-medium">Comptabilisée le</TableHead>
-                                                <TableHead className="text-muted-foreground font-medium">Par</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {accountedInvoices.map((invoice) => {
-                                                const fd = invoice.fieldsData || {}
-                                                const supplier = fd.supplier || fd.fournisseur || fd.supplierName || "—"
-                                                const invoiceNumber = fd.invoiceNumber || fd.numeroFacture || fd.invoice_number || "—"
-                                                const amountHT  = fd.amountHT  || fd.montantHT  || fd.totalHT  || fd.baseHT  || null
-                                                const amountTVA = fd.amountTVA || fd.montantTVA || fd.tvaAmount || fd.tva    || null
-                                                const amountTTC = fd.amountTTC || fd.montantTTC || fd.totalTTC || fd.total   || null
-                                                return (
-                                                    <TableRow
-                                                        key={invoice.id}
-                                                        className="border-border/50 hover:bg-accent/30 transition-colors cursor-pointer"
-                                                        onClick={() => handleView(invoice)}
-                                                    >
-                                                        <TableCell>
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10">
-                                                                    <BookCheck className="h-4 w-4 text-emerald-500" />
-                                                                </div>
-                                                                <div className="min-w-0">
-                                                                    <p className="truncate max-w-[180px] text-sm font-medium text-foreground">
-                                                                        {invoice.originalName || invoice.filename}
-                                                                    </p>
-                                                                    <p className="text-xs text-muted-foreground">#{invoice.id}</p>
-                                                                </div>
-                                                            </div>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <span className="text-sm text-foreground">{String(supplier)}</span>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <span className="text-sm text-muted-foreground font-mono">{String(invoiceNumber)}</span>
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            <span className="text-sm text-foreground">{formatAmount(amountHT)}</span>
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            <span className="text-sm text-muted-foreground">{formatAmount(amountTVA)}</span>
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            <span className="text-sm font-semibold text-foreground">{formatAmount(amountTTC)}</span>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <span className="text-sm text-muted-foreground">{formatDate(invoice.accountedAt)}</span>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <span className="text-sm text-muted-foreground">{invoice.accountedBy || "—"}</span>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                )
-                                            })}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-                </TabsContent>
-            </Tabs>
+                
         </div>
     )
 }
@@ -381,3 +256,4 @@ export default function InvoiceListPage() {
         </Suspense>
     )
 }
+

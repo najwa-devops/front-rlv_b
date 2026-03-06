@@ -77,6 +77,13 @@ export class InvoiceService {
         return response.data;
     }
 
+    static async previewComptabilisation(id: number): Promise<Record<string, any>> {
+        const response = await apiClient.get<Record<string, any>>(
+            `/api/accounting/journal/entries/preview/from-invoice/${id}`
+        );
+        return response.data;
+    }
+
     static async getStats(): Promise<Record<string, any>> {
         const response = await apiClient.get<Record<string, any>>('/api/dynamic-invoices/stats');
         return response.data;
@@ -85,5 +92,13 @@ export class InvoiceService {
     static getFileUrl(filename: string): string {
         const base = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
         return `${base}/api/dynamic-invoices/files/${encodeURIComponent(filename)}`;
+    }
+
+    static async downloadFile(filename: string): Promise<Blob> {
+        const response = await apiClient.get(
+            `/api/dynamic-invoices/files/${encodeURIComponent(filename)}`,
+            { responseType: 'blob' }
+        );
+        return response.data as Blob;
     }
 }

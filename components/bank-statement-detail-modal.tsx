@@ -613,10 +613,10 @@ export function BankStatementDetailModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-[90vw] sm:max-w-[90vw] w-full h-[90vh] min-h-0 flex flex-col p-0 gap-0 overflow-hidden">
-                <DialogHeader className="p-6 pb-2 border-b bg-card z-10">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
+            <DialogContent className="w-[96vw] max-w-[96vw] sm:max-w-[96vw] xl:max-w-[90vw] h-[92vh] min-h-0 flex flex-col p-0 gap-0 overflow-hidden">
+                <DialogHeader className="p-3 sm:p-4 xl:p-6 pb-2 border-b bg-card z-10">
+                    <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
+                        <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0">
                             <Button
                                 variant="ghost"
                                 size="sm"
@@ -626,17 +626,17 @@ export function BankStatementDetailModal({
                                 <ArrowLeft className="h-4 w-4" />
                                 Retour
                             </Button>
-                            <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                            <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
                                 <FileText className="h-5 w-5 text-emerald-600" />
                             </div>
                             <div>
-                                <DialogTitle className="text-xl">Détail du Relevé Bancaire</DialogTitle>
-                                <DialogDescription>
+                                <DialogTitle className="text-lg sm:text-xl truncate">Détail du Relevé Bancaire</DialogTitle>
+                                <DialogDescription className="truncate">
                                     {localStatement.originalName} • {localStatement.bankName}
                                 </DialogDescription>
                             </div>
                         </div>
-                        <div className="flex items-center gap-6 pr-8">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 xl:flex xl:items-center gap-3 sm:gap-4 xl:gap-6 xl:pr-8">
                             <div className="text-right">
                                 <span className="text-xs text-muted-foreground uppercase font-semibold block">Statut</span>
                                 {getStatusBadge(localStatement.status)}
@@ -646,7 +646,7 @@ export function BankStatementDetailModal({
                                     </p>
                                 )}
                             </div>
-                            <div className="text-right border-l pl-6">
+                            <div className="text-right xl:border-l xl:pl-6">
                                 <span className="text-xs text-muted-foreground uppercase font-semibold block">Compte</span>
                                 <Badge variant={localStatement.isLinked ? "default" : "outline"}
                                     className={cn(
@@ -671,7 +671,7 @@ export function BankStatementDetailModal({
                                     </div>
                                 ) : null}
                             </div>
-                            <div className="text-right border-l pl-6">
+                            <div className="text-right xl:border-l xl:pl-6">
                                 <span className="text-xs text-muted-foreground uppercase font-semibold block">Règle TTC</span>
                                 <div className="mt-1 flex items-center justify-end gap-2">
                                     <Checkbox
@@ -689,7 +689,7 @@ export function BankStatementDetailModal({
                                     {ttcUpdating ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" /> : null}
                                 </div>
                             </div>
-                            <div className="text-right border-l pl-6 space-y-1">
+                            <div className="text-right xl:border-l xl:pl-6 space-y-1">
                                 <span className="text-xs text-muted-foreground uppercase font-semibold block">Outils</span>
                                 <Dialog>
                                     <DialogTrigger asChild>
@@ -705,7 +705,7 @@ export function BankStatementDetailModal({
                                     <DialogContent className="max-w-[50vw] sm:max-w-[50vw] w-full max-h-[85vh] flex flex-col p-6">
                                         <DialogHeader>
                                             <DialogTitle>Inspection du Texte Extrait (OCR)</DialogTitle>
-                                            <DialogDescription>
+                                            <DialogDescription className="truncate">
                                                 Visualisez le texte brut et nettoyé pour diagnostiquer les erreurs d'extraction.
                                             </DialogDescription>
                                         </DialogHeader>
@@ -732,17 +732,17 @@ export function BankStatementDetailModal({
                                     </DialogContent>
                                 </Dialog>
                             </div>
-                            <div className="text-right border-l pl-6">
+                            <div className="text-right xl:border-l xl:pl-6">
                                 <span className="text-xs text-muted-foreground uppercase font-semibold block">Transactions</span>
-                                <span className="font-bold text-lg">{editableTransactions.length || 0}</span>
+                                <span className="font-bold text-base sm:text-lg">{editableTransactions.length || 0}</span>
                             </div>
-                            <div className="text-right border-l pl-6">
+                            <div className="text-right xl:border-l xl:pl-6">
                                 <span className="text-xs text-muted-foreground uppercase font-semibold block text-red-500">Débit Total</span>
                                 <span className="font-bold text-lg text-red-500">
                                     {localStatement.totalDebit ? `${localStatement.totalDebit.toLocaleString(undefined, { minimumFractionDigits: 2 })} DH` : "0.00 DH"}
                                 </span>
                             </div>
-                            <div className="text-right border-l pl-6">
+                            <div className="text-right xl:border-l xl:pl-6">
                                 <span className="text-xs text-muted-foreground uppercase font-semibold block text-emerald-500">Crédit Total</span>
                                 <span className="font-bold text-lg text-emerald-500">
                                     {localStatement.totalCredit ? `${localStatement.totalCredit.toLocaleString(undefined, { minimumFractionDigits: 2 })} DH` : "0.00 DH"}
@@ -752,7 +752,7 @@ export function BankStatementDetailModal({
                     </div>
                 </DialogHeader>
 
-                <div className="flex-1 min-h-0 overflow-hidden bg-muted/10 p-6 flex flex-col gap-6">
+                <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-muted/10 p-3 sm:p-4 xl:p-6 flex flex-col gap-4 sm:gap-6">
                     {localStatement.validationErrors && (
                         <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-3 text-red-500 shrink-0">
                             <AlertTriangle className="h-5 w-5 mt-0.5" />
@@ -764,8 +764,8 @@ export function BankStatementDetailModal({
                     )}
 
                     {!isAccounted && (
-                        <div className="rounded-md border bg-card shadow-sm p-4 shrink-0">
-                            <div className="grid grid-cols-1 md:grid-cols-8 gap-3 items-end">
+                        <div className="rounded-md border bg-card shadow-sm p-3 sm:p-4 shrink-0">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-3 items-end">
                                 <div className="space-y-1">
                                     <Label>N° Transaction</Label>
                                     <Input
@@ -848,7 +848,7 @@ export function BankStatementDetailModal({
                                         </PopoverContent>
                                     </Popover>
                                 </div>
-                                <div className="space-y-1 md:col-span-2">
+                                <div className="space-y-1 xl:col-span-2">
                                     <Label>Libellé</Label>
                                     <Input
                                         value={newTransaction.libelle}
@@ -888,13 +888,13 @@ export function BankStatementDetailModal({
                             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                         </div>
                     ) : (
-                        <div className="relative rounded-md border bg-card shadow-sm overflow-hidden flex-1 min-h-0 flex flex-col">
+                        <div className="relative rounded-md border bg-card shadow-sm overflow-hidden min-h-[260px] flex flex-col">
                             {(isValidatedStatus(localStatement.status) || isAccountedStatus(localStatement.status)) && (
-                                <div className="pointer-events-none absolute inset-x-0 top-14 bottom-0 z-20 flex items-center justify-center">
+                                <div className="pointer-events-none absolute inset-x-0 top-14 bottom-0 z-20 flex items-center justify-center p-2">
                                     <div className="flex flex-col items-center gap-8">
                                         {isValidatedStatus(localStatement.status) && (
                                             <div
-                                                className="select-none border-[6px] border-emerald-600 text-emerald-600 rounded-xl px-12 py-3 text-6xl font-extrabold tracking-wider uppercase rotate-[-8deg] opacity-90 bg-white/10"
+                                                className="select-none border-4 sm:border-[6px] border-emerald-600 text-emerald-600 rounded-xl px-6 sm:px-12 py-2 sm:py-3 text-3xl sm:text-6xl font-extrabold tracking-wider uppercase rotate-[-8deg] opacity-90 bg-white/10"
                                                 style={{
                                                     textShadow: "0 0 1px rgba(5,150,105,0.45)",
                                                     boxShadow: "inset 0 0 0 2px rgba(5,150,105,0.45)",
@@ -905,7 +905,7 @@ export function BankStatementDetailModal({
                                         )}
                                         {isAccountedStatus(localStatement.status) && (
                                             <div
-                                                className="select-none border-[6px] border-violet-600 text-violet-600 rounded-xl px-12 py-3 text-6xl font-extrabold tracking-wider uppercase rotate-[-8deg] opacity-90 bg-white/10"
+                                                className="select-none border-4 sm:border-[6px] border-violet-600 text-violet-600 rounded-xl px-6 sm:px-12 py-2 sm:py-3 text-3xl sm:text-6xl font-extrabold tracking-wider uppercase rotate-[-8deg] opacity-90 bg-white/10"
                                                 style={{
                                                     textShadow: "0 0 1px rgba(124,58,237,0.45)",
                                                     boxShadow: "inset 0 0 0 2px rgba(124,58,237,0.45)",
@@ -917,7 +917,41 @@ export function BankStatementDetailModal({
                                     </div>
                                 </div>
                             )}
-                            <div className="flex-1 min-h-0 overflow-y-auto">
+                            <div className="min-h-[220px] max-h-[42vh] overflow-y-auto">
+                                <div className="xl:hidden space-y-2 p-2">
+                                    {sortByIndex(editableTransactions).map((tx) => {
+                                        const displayCompte = resolveDisplayCompte(tx.compte)
+                                        const isCommissionLine = isCommissionVisualLine(tx.libelle)
+                                        return (
+                                            <div key={tx.id} className={cn("rounded-md border p-3 bg-background/70", isCommissionLine && "bg-sky-50/70")}>
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <Badge variant="secondary" className="font-normal text-xs">
+                                                        {tx.transactionIndex || tx.id}
+                                                    </Badge>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        {tx.dateOperation || "-"} • {tx.dateValeur || "-"}
+                                                    </div>
+                                                </div>
+                                                <div className="mt-2 text-sm font-mono">{displayCompte}</div>
+                                                <div className="mt-1 text-sm break-words">{tx.libelle || "-"}</div>
+                                                <div className="mt-2 flex items-center justify-between text-sm">
+                                                    <span className="text-red-600">
+                                                        Débit: {Number(tx.debit || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </span>
+                                                    <span className="text-emerald-600">
+                                                        Crédit: {Number(tx.credit || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                    {editableTransactions.length === 0 && (
+                                        <div className="h-24 flex items-center justify-center text-muted-foreground text-sm">
+                                            Aucune transaction trouvée pour ce relevé
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="hidden xl:block overflow-x-scroll">
                                 <Table>
                                     <TableHeader>
                                         <TableRow className="bg-muted/50 hover:bg-muted/50">
@@ -1081,12 +1115,13 @@ export function BankStatementDetailModal({
                                         )}
                                     </TableBody>
                                 </Table>
+                                </div>
                             </div>
                         </div>
                     )}
                 </div>
 
-                <div className="p-4 border-t bg-muted/20 flex items-center justify-between gap-3">
+                <div className="sticky bottom-0 z-10 p-3 sm:p-4 border-t bg-muted/20 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                         <AlertCircle className="h-4 w-4 text-orange-500" />
                         <p className="text-sm text-muted-foreground">
@@ -1111,7 +1146,7 @@ export function BankStatementDetailModal({
                 <DialogContent className="max-w-[95vw] sm:max-w-5xl">
                     <DialogHeader>
                         <DialogTitle>Simulation de Comptabilisation</DialogTitle>
-                        <DialogDescription>
+                        <DialogDescription className="truncate">
                             Chaque transaction du relevé est transformée automatiquement en 2 écritures comptables.
                         </DialogDescription>
                     </DialogHeader>
@@ -1127,6 +1162,26 @@ export function BankStatementDetailModal({
                         {simulationResult?.entries?.length ? (
                             <div className="rounded-md border overflow-hidden">
                                 <div className="max-h-[55vh] overflow-auto">
+                                    <div className="xl:hidden space-y-2 p-2">
+                                        {simulationResult.entries.map((row: any, index: number) => (
+                                            <div key={`${row.numero}-${index}`} className={cn("rounded-md border p-3 bg-background/70", row.counterpart && "bg-muted/40")}>
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="text-xs font-mono text-muted-foreground">#{row.numero}</span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {row.dateOperation ? new Date(row.dateOperation).toLocaleDateString("fr-FR") : "-"}
+                                                    </span>
+                                                </div>
+                                                <div className="mt-1 text-sm">{row.moisTexte} ({row.nmoisTexte}) • {row.journal}</div>
+                                                <div className="mt-1 text-sm font-mono">{row.ncompte}</div>
+                                                <div className="mt-1 text-sm break-words">{row.libelle || "-"}</div>
+                                                <div className="mt-2 flex items-center justify-between text-sm">
+                                                    <span className="text-red-600">{Number(row.debit || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                                    <span className="text-emerald-600">{Number(row.credit || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="hidden xl:block overflow-x-scroll">
                                     <Table>
                                         <TableHeader>
                                             <TableRow className="bg-muted/40">
@@ -1155,6 +1210,7 @@ export function BankStatementDetailModal({
                                             ))}
                                         </TableBody>
                                     </Table>
+                                    </div>
                                 </div>
                             </div>
                         ) : (
@@ -1195,7 +1251,7 @@ export function BankStatementDetailModal({
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Confirmation de comptabilisation</AlertDialogTitle>
-                        <AlertDialogDescription>
+                        <AlertDialogDescription className="truncate">
                             Etes-vous sur de vouloir confirmer cette comptabilisation ?
                         </AlertDialogDescription>
                     </AlertDialogHeader>
@@ -1217,3 +1273,6 @@ export function BankStatementDetailModal({
         </Dialog>
     )
 }
+
+
+

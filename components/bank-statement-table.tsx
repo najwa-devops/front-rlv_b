@@ -111,7 +111,7 @@ export function BankStatementTable({ statements, onView, onDelete, onValidate, o
             return (
                 <div className="flex flex-col gap-1 w-24">
                     {getStatusBadge(statement.status)}
-                    <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                    <div className="w-full bg-muted rounded-full h-1.5 ">
                         <div
                             className="bg-sky-400 h-full transition-all duration-300"
                             style={{ width: `${progress}%` }}
@@ -139,8 +139,66 @@ export function BankStatementTable({ statements, onView, onDelete, onValidate, o
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <div className="overflow-x-auto">
-                        <Table>
+                    <div className="xl:hidden space-y-3 p-3 max-h-[70vh] overflow-y-auto">
+                        {Array.isArray(statements) && statements.map((statement) => (
+                            <div key={statement.id} className="rounded-lg border border-border/50 p-3 bg-background/60">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-semibold truncate">{statement.originalName || statement.filename}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {statement.month && statement.year ? `${String(statement.month).padStart(2, '0')}/${statement.year}` : "-"} • {statement.bankName || "-"}
+                                        </p>
+                                    </div>
+                                    {renderStatusCell(statement)}
+                                </div>
+                                <div className="mt-3 grid grid-cols-1 gap-1 text-xs">
+                                    <div className="font-mono text-muted-foreground truncate">RIB: {statement.rib || "-"}</div>
+                                    <div className="text-red-500">Décaissement: {statement.totalDebit ? `${statement.totalDebit.toLocaleString()} DH` : "0.00 DH"}</div>
+                                    <div className="text-emerald-500">Encaissement: {statement.totalCredit ? `${statement.totalCredit.toLocaleString()} DH` : "0.00 DH"}</div>
+                                </div>
+                                <div className="mt-3 flex items-center justify-end gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8"
+                                        onClick={() => handleViewDetails(statement)}
+                                    >
+                                        <Eye className="h-4 w-4 mr-1" />
+                                        Détails
+                                    </Button>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-40">
+                                            {(statement.status === "TREATED" || statement.status === "READY_TO_VALIDATE" || statement.status === "TRAITE" || statement.status === "PRET_A_VALIDER") && onValidate && (
+                                                <DropdownMenuItem className="text-emerald-600 gap-2" onClick={() => onValidate(statement.id)}>
+                                                    <CheckCircle2 className="h-4 w-4" /> Valider
+                                                </DropdownMenuItem>
+                                            )}
+                                            {(statement.status === "VALIDATED" || statement.status === "VALIDE") && onMarkAsAccounted && (
+                                                <DropdownMenuItem className="text-violet-700 gap-2" onClick={() => onMarkAsAccounted(statement.id)}>
+                                                    <CheckCircle2 className="h-4 w-4" /> Comptabiliser
+                                                </DropdownMenuItem>
+                                            )}
+                                            {(statement.canReprocess || statement.status === "ERROR" || statement.status === "ERREUR") && onReprocess && (
+                                                <DropdownMenuItem className="text-blue-600 gap-2" onClick={() => onReprocess(statement)}>
+                                                    <RefreshCw className="h-4 w-4" /> Reprocesser
+                                                </DropdownMenuItem>
+                                            )}
+                                            <DropdownMenuItem className="text-destructive gap-2" onClick={() => onDelete(statement.id)}>
+                                                <Trash2 className="h-4 w-4" /> Supprimer
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="hidden xl:block overflow-x-scroll overflow-y-auto max-h-[70vh]">
+                        <Table className="min-w-[1280px]">
                             <TableHeader>
                                 <TableRow className="border-border/50 hover:bg-transparent bg-muted/30">
                                     <TableHead className="font-bold text-foreground">Nom du relevé</TableHead>
@@ -304,8 +362,32 @@ export function BankTransactionTable({ transactions, statement, onUpdate }: Bank
                 </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                    <Table>
+                <div className="xl:hidden space-y-2 p-3 max-h-[70vh] overflow-y-auto">
+                    {Array.isArray(transactions) && transactions.map((tx) => (
+                        <div key={tx.id} className="rounded-lg border border-border/50 p-3 bg-background/60">
+                            <div className="flex items-center justify-between gap-2">
+                                <div className="text-xs text-muted-foreground">
+                                    {tx.dateOperation} • {tx.dateValeur}
+                                </div>
+                                {tx.isValid ? (
+                                    <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30">Valide</Badge>
+                                ) : tx.needsReview ? (
+                                    <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/30">À réviser</Badge>
+                                ) : (
+                                    <Badge variant="outline">OCR</Badge>
+                                )}
+                            </div>
+                            <div className="mt-2 text-sm font-mono">{tx.compte}</div>
+                            <div className="mt-1 text-sm truncate" title={tx.libelle}>{tx.libelle}</div>
+                            <div className="mt-2 flex items-center justify-between text-sm">
+                                <span className="text-red-500">{tx.debit > 0 ? `${tx.debit.toLocaleString()} DH` : "-"}</span>
+                                <span className="text-emerald-500">{tx.credit > 0 ? `${tx.credit.toLocaleString()} DH` : "-"}</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <div className="hidden xl:block overflow-x-scroll overflow-y-auto max-h-[70vh]">
+                    <Table className="min-w-[1280px]">
                         <TableHeader>
                             <TableRow className="bg-muted/30">
                                 <TableHead>Date Opération</TableHead>
