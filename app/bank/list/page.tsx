@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardDescription, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { BankStatementTable } from "@/components/bank-statement-table"
 import { UploadBankPage } from "@/components/upload-bank-page"
@@ -18,6 +18,11 @@ function BankListPageContent() {
     const [statements, setStatements] = useState<BankStatementV2[]>([])
     const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "validated" | "accounted">("all")
 
+    const isAccountedStatus = (status?: string) => {
+        const normalized = (status || "").toUpperCase()
+        return normalized === "COMPTABILISE" || normalized === "COMPTABILISÉ"
+    }
+
     const loadData = async () => {
         try {
             const statementsData = await api.getAllBankStatements({ limit: 1000 })
@@ -31,7 +36,22 @@ function BankListPageContent() {
     }
 
     useEffect(() => {
-        loadData()
+        const resetTemporaryStatementsOnRefresh = async () => {
+            setLoading(true)
+            try {
+                const existing = await api.getAllBankStatements({ limit: 1000 })
+                const temporary = (Array.isArray(existing) ? existing : []).filter((s) => !isAccountedStatus(s.status))
+                if (temporary.length > 0) {
+                    await Promise.allSettled(temporary.map((s) => api.deleteBankStatement(s.id)))
+                }
+            } catch (error) {
+                console.error("Error clearing temporary bank statements on refresh:", error)
+            } finally {
+                await loadData()
+            }
+        }
+
+        resetTemporaryStatementsOnRefresh()
     }, [])
 
     useEffect(() => {
@@ -58,7 +78,7 @@ function BankListPageContent() {
     const filteredStatements = statements.filter((s) => {
         const status = (s.status || "").toUpperCase()
         const isValidated = status === "VALIDATED" || status === "VALIDE"
-        const isAccounted = status === "COMPTABILISE" || status === "COMPTABILISÉ"
+        const isAccounted = isAccountedStatus(status)
         const isPending = !isValidated && !isAccounted
 
         if (statusFilter === "validated") return isValidated
@@ -166,7 +186,7 @@ function BankListPageContent() {
     }
 
     const handleDeleteAll = async () => {
-        if (!confirm("Supprimer tous les relevés bancaires ?")) return
+        if (!confirm("Êtes-vous sûr de supprimer ces fichiers ?\n\nOui ou Annuler")) return
         try {
             await api.deleteAllBankStatements()
             await loadData()
@@ -191,12 +211,9 @@ function BankListPageContent() {
             <Card className="border-border/50 bg-card/50">
                 <CardHeader>
                     <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle className="text-2xl">Liste des Relevés Bancaires</CardTitle>
-                            <CardDescription>
-                                {filteredStatements.length} relevé{filteredStatements.length > 1 ? "s" : ""} affiché{filteredStatements.length > 1 ? "s" : ""}
-                            </CardDescription>
-                        </div>
+                        <CardDescription>
+                            {filteredStatements.length} relevé{filteredStatements.length > 1 ? "s" : ""} affiché{filteredStatements.length > 1 ? "s" : ""}
+                        </CardDescription>
                         <Button variant="destructive" size="sm" onClick={handleDeleteAll} disabled={statements.length === 0}>
                             Tout supprimer
                         </Button>

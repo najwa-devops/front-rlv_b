@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
+import Link from "next/link"
 import { useAuth } from "@/hooks/use-auth"
 import { getRouteMetadata } from "@/src/config/navigation.config"
 import { Button } from "@/components/ui/button"
@@ -21,6 +22,10 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     useEffect(() => { setMounted(true) }, [])
 
     const { title: pageTitle } = getRouteMetadata(pathname)
+    const bankingMenu = [
+        { href: "/bank/list", label: "Liste des relevés" },
+        { href: "/centre-monetique", label: "Centre Monétique" },
+    ]
 
     if (isLoginPage) {
         return <>{children}</>
@@ -74,6 +79,25 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
             {/* Main content */}
             <main className="flex-1 overflow-auto">
                 <div className="container mx-auto px-6 py-6">
+                    <nav className="mb-4 flex flex-wrap gap-2">
+                        {bankingMenu.map((item) => {
+                            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className={`inline-flex items-center rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
+                                        isActive
+                                            ? "border-primary/40 bg-primary/10 text-primary"
+                                            : "border-border/60 bg-card/40 text-muted-foreground hover:bg-accent hover:text-foreground"
+                                    }`}
+                                >
+                                    {item.label}
+                                </Link>
+                            )
+                        })}
+                    </nav>
+
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold tracking-tight text-foreground">
                             {pageTitle}

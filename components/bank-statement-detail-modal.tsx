@@ -752,7 +752,7 @@ export function BankStatementDetailModal({
                     </div>
                 </DialogHeader>
 
-                <div className="flex-1 min-h-0 overflow-hidden bg-muted/10 p-6 flex flex-col gap-6">
+                <div className="flex-1 min-h-0 overflow-y-auto bg-muted/10 p-6 flex flex-col gap-6">
                     {localStatement.validationErrors && (
                         <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-3 text-red-500 shrink-0">
                             <AlertTriangle className="h-5 w-5 mt-0.5" />
