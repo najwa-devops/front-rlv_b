@@ -8,8 +8,8 @@ import { Upload, FileText, X, Loader2, CheckCircle, AlertCircle, CloudUpload, Sp
 import type { BankStatementV2 } from "@/lib/types"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-import { api } from "@/lib/api"
-import { type BankOption } from "@/lib/types"
+import { api, getAccountsByClasse } from "@/lib/api"
+import { type BankOption, type Account } from "@/lib/types"
 
 interface FileItem {
     file: File
@@ -32,7 +32,9 @@ export function UploadBankPage({ onUpload, onViewBankStatement, isDemoMode }: Up
     const [isDragOver, setIsDragOver] = useState(false)
     const [isUploading, setIsUploading] = useState(false)
     const [selectedBank, setSelectedBank] = useState<string>("AUTO")
+    const [selectedCompte, setSelectedCompte] = useState<string>("")
     const [supportedBanks, setSupportedBanks] = useState<BankOption[]>([])
+    const [comptes5141, setComptes5141] = useState<Account[]>([])
 
     useEffect(() => {
         const fetchOptions = async () => {
@@ -48,6 +50,22 @@ export function UploadBankPage({ onUpload, onViewBankStatement, isDemoMode }: Up
             }
         }
         fetchOptions()
+    }, [])
+
+    useEffect(() => {
+        const fetchComptes5141 = async () => {
+            try {
+                const accounts = await getAccountsByClasse(5)
+                const filtered = accounts.filter(a => a.code.startsWith("5141"))
+                setComptes5141(filtered)
+                if (filtered.length > 0) {
+                    setSelectedCompte(filtered[0].code)
+                }
+            } catch (error) {
+                console.error("Error fetching 5141 accounts", error)
+            }
+        }
+        fetchComptes5141()
     }, [])
 
     const acceptedTypes = [
@@ -178,7 +196,22 @@ export function UploadBankPage({ onUpload, onViewBankStatement, isDemoMode }: Up
                             </SelectContent>
                         </Select>
                             </div>
-
+{/* Compt Selection */}
+<div className="text-xs sm:text-sm w-full">
+    <p className="font-semibold">Compte</p>
+    <Select value={selectedCompte} onValueChange={setSelectedCompte}>
+        <SelectTrigger className="w-full bg-background text-xs sm:text-sm">
+            <SelectValue placeholder="Choisir un compte 5141" />
+        </SelectTrigger>
+        <SelectContent>
+            {comptes5141.map(compte => (
+                <SelectItem key={compte.code} value={compte.code}>
+                    {compte.code} - {compte.libelle}
+                </SelectItem>
+            ))}
+        </SelectContent>
+    </Select>
+</div>
                     </div>
 
                     <div

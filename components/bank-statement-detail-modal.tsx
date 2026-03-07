@@ -621,7 +621,7 @@ export function BankStatementDetailModal({
                         <div className="grid grid-cols-6  gap-0 ">
                              
                             <div className="text-right">
-                                <span className="text-xs text-muted-foreground uppercase font-semibold block">Statut</span>
+                                <span className="text-[9px] text-muted-foreground uppercase font-semibold block">Statut</span>
                                 {getStatusBadge(localStatement.status)}
                                 {isAccountedStatus(localStatement.status) && localStatement.accountedAt && (
                                     <p className="text-[11px] text-muted-foreground mt-1">
@@ -631,7 +631,7 @@ export function BankStatementDetailModal({
                             </div>
                             
                             <div className="text-right ">
-                                <span className="text-xs text-muted-foreground uppercase font-semibold block">Compte</span>
+                                <span className="text-[9px] text-muted-foreground uppercase font-semibold block">Compte</span>
                                 <Badge variant={localStatement.isLinked ? "default" : "outline"}
                                     className={cn(
                                         localStatement.isLinked
@@ -643,7 +643,7 @@ export function BankStatementDetailModal({
                                
                             </div>
                             <div className="text-right xl:border-l xl:pl-6">
-                                <span className="text-xs text-muted-foreground uppercase font-semibold block">Règle TTC</span>
+                                <span className="text-[9px] text-muted-foreground uppercase font-semibold block">Règle TTC</span>
                                 <div className="mt-1 flex items-center justify-end gap-2">
                                     <Checkbox
                                         id={`ttc-rule-${localStatement.id}`}
@@ -653,7 +653,7 @@ export function BankStatementDetailModal({
                                     />
                                     <Label
                                         htmlFor={`ttc-rule-${localStatement.id}`}
-                                        className="text-xs font-medium cursor-pointer"
+                                        className="text-[9px] font-medium cursor-pointer"
                                     >
                                         Appliquer
                                     </Label>
@@ -662,17 +662,17 @@ export function BankStatementDetailModal({
                             </div>
                            
                             <div className="text-right xl:border-l xl:pl-6">
-                                <span className="text-xs text-muted-foreground uppercase font-semibold block">Transactions</span>
+                                <span className="text-[9px] text-muted-foreground uppercase font-semibold block">Transactions</span>
                                 <span className="font-bold text-base sm:text-lg">{editableTransactions.length || 0}</span>
                             </div>
                             <div className="text-right xl:border-l xl:pl-6">
-                                <span className="text-xs text-muted-foreground uppercase font-semibold block text-red-500">Débit Total</span>
+                                <span className="text-[9px] text-muted-foreground uppercase font-semibold block text-red-500">Débit Total</span>
                                 <span className="font-bold text-lg text-red-500">
                                     {localStatement.totalDebit ? `${localStatement.totalDebit.toLocaleString(undefined, { minimumFractionDigits: 2 })} DH` : "0.00 DH"}
                                 </span>
                             </div>
                             <div className="text-right xl:border-l xl:pl-6">
-                                <span className="text-xs text-muted-foreground uppercase font-semibold block text-emerald-500">Crédit Total</span>
+                                <span className="text-[9px] text-muted-foreground uppercase font-semibold block text-emerald-500">Crédit Total</span>
                                 <span className="font-bold text-lg text-emerald-500">
                                     {localStatement.totalCredit ? `${localStatement.totalCredit.toLocaleString(undefined, { minimumFractionDigits: 2 })} DH` : "0.00 DH"}
                                 </span>
@@ -779,7 +779,7 @@ export function BankStatementDetailModal({
                                                                                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                                                                             ) : null}
                                                                         </div>
-                                                                        <span className="text-xs text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">
+                                                                        <span className="text-[9px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">
                                                                             {account.code}
                                                                         </span>
                                                                     </CommandItem>
@@ -890,7 +890,7 @@ export function BankStatementDetailModal({
                                                 ) : (
                                                     <Badge
                                                         variant="secondary"
-                                                        className={cn("font-normal text-xs bg-muted text-muted-foreground", !isAccounted && "cursor-pointer")}
+                                                        className={cn("font-normal text-[9px] bg-muted text-muted-foreground", !isAccounted && "cursor-pointer")}
                                                         onClick={() => {
                                                             if (!isAccounted) setEditingCell({ id: tx.id, field: "transactionIndex" })
                                                         }}
@@ -994,7 +994,7 @@ export function BankStatementDetailModal({
                                                                                             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                                                                                         )}
                                                                                     </div>
-                                                                                    <span className="text-xs text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">
+                                                                                    <span className="text-[9px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">
                                                                                         {account.code}
                                                                                     </span>
                                                                                 </CommandItem>
@@ -1088,7 +1088,7 @@ export function BankStatementDetailModal({
                                         <TableBody>
                                             {simulationResult.entries.map((row: any, index: number) => (
                                                 <TableRow key={`${row.numero}-${index}`} className={row.counterpart ? "bg-muted/30" : ""}>
-                                                    <TableCell className="font-mono text-xs">{row.numero}</TableCell>
+                                                    <TableCell className="font-mono text-[9px]">{row.numero}</TableCell>
                                                     <TableCell>{row.moisTexte} ({row.nmoisTexte})</TableCell>
                                                     <TableCell>{row.dateOperation ? new Date(row.dateOperation).toLocaleDateString("fr-FR") : "-"}</TableCell>
                                                     <TableCell>{row.journal}</TableCell>
