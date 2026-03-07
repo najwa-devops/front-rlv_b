@@ -5,6 +5,16 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { Card, CardDescription, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { BankStatementTable } from "@/components/bank-statement-table"
 import { UploadBankPage } from "@/components/upload-bank-page"
 import { api } from "@/lib/api"
@@ -17,6 +27,7 @@ function BankListPageContent() {
     const [loading, setLoading] = useState(true)
     const [statements, setStatements] = useState<BankStatementV2[]>([])
     const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "validated" | "accounted">("all")
+    const [deleteAllOpen, setDeleteAllOpen] = useState(false)
 
     const isAccountedStatus = (status?: string) => {
         const normalized = (status || "").toUpperCase()
@@ -185,14 +196,19 @@ function BankListPageContent() {
         }
     }
 
-    const handleDeleteAll = async () => {
-        if (!confirm("Êtes-vous sûr de supprimer ces fichiers ?\n\nOui ou Annuler")) return
+    const handleDeleteAll = () => {
+        setDeleteAllOpen(true)
+    }
+
+    const confirmDeleteAll = async () => {
         try {
             await api.deleteAllBankStatements()
             await loadData()
             toast.success("Tous les relevés ont été supprimés")
         } catch (error) {
             toast.error("Erreur lors de la suppression globale")
+        } finally {
+            setDeleteAllOpen(false)
         }
     }
 
@@ -249,6 +265,23 @@ function BankListPageContent() {
                     )
                 }}
             />
+
+            <AlertDialog open={deleteAllOpen} onOpenChange={setDeleteAllOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Confirmation</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Êtes-vous sûr de supprimer ces fichiers ?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction onClick={(e) => { e.preventDefault(); void confirmDeleteAll() }}>
+                            Oui
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

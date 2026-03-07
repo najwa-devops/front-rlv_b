@@ -29,6 +29,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 import { api } from "@/lib/api"
 import {
@@ -62,6 +72,8 @@ export default function CentreMonetiquePage() {
   const [editableRows, setEditableRows] = useState<CentreMonetiqueExtractionRow[]>([])
   const [isEditing, setIsEditing] = useState(false)
   const [savingRows, setSavingRows] = useState(false)
+  const [deleteBatchId, setDeleteBatchId] = useState<number | null>(null)
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false)
 
   const acceptedExtensions = ".pdf,.png,.jpg,.jpeg,.webp,.bmp,.tif,.tiff"
 
@@ -449,20 +461,29 @@ export default function CentreMonetiquePage() {
     }
   }
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Êtes-vous sûr de supprimer ce fichier ?\n\nOui ou Annuler")) return
+  const handleDelete = (id: number) => {
+    setDeleteBatchId(id)
+  }
+
+  const confirmDelete = async () => {
+    if (deleteBatchId == null) return
     try {
-      await api.deleteCentreMonetiqueBatch(id)
-      if (selected?.id === id) setSelected(null)
+      await api.deleteCentreMonetiqueBatch(deleteBatchId)
+      if (selected?.id === deleteBatchId) setSelected(null)
       toast.success("Batch supprimé")
       await loadHistory()
     } catch (error: any) {
       toast.error(error?.message || "Erreur suppression")
+    } finally {
+      setDeleteBatchId(null)
     }
   }
 
-  const handleDeleteAll = async () => {
-    if (!confirm("Êtes-vous sûr de supprimer ces fichiers ?\n\nOui ou Annuler")) return
+  const handleDeleteAll = () => {
+    setDeleteAllOpen(true)
+  }
+
+  const confirmDeleteAll = async () => {
     const ids = batches.map((b) => b.id)
     try {
       await Promise.all(ids.map((id) => api.deleteCentreMonetiqueBatch(id)))
@@ -471,6 +492,8 @@ export default function CentreMonetiquePage() {
       await loadHistory()
     } catch (error: any) {
       toast.error(error?.message || "Erreur suppression globale")
+    } finally {
+      setDeleteAllOpen(false)
     }
   }
 
@@ -1153,6 +1176,40 @@ export default function CentreMonetiquePage() {
           </Tabs>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={deleteBatchId !== null} onOpenChange={(open) => { if (!open) setDeleteBatchId(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de supprimer ce fichier ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); void confirmDelete() }}>
+              Oui
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteAllOpen} onOpenChange={setDeleteAllOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de supprimer ces fichiers ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); void confirmDeleteAll() }}>
+              Oui
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

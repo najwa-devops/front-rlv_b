@@ -6,6 +6,16 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
     FileText,
     Save,
     Trash2,
@@ -55,6 +65,7 @@ export function BankStatementTable({ statements, onView, onDelete, onValidate, o
     const [linkedStatements, setLinkedStatements] = useState<Record<number, boolean>>(initialLinked)
     const [selectedStatement, setSelectedStatement] = useState<BankStatementV2 | null>(null)
     const [isModalOpen, setIsModalOpen] = useState(false)
+    const [deleteStatementId, setDeleteStatementId] = useState<number | null>(null)
 
     // Mettre à jour si les statements changent
     useEffect(() => {
@@ -68,6 +79,12 @@ export function BankStatementTable({ statements, onView, onDelete, onValidate, o
     const handleViewDetails = (statement: BankStatementV2) => {
         setSelectedStatement(statement)
         setIsModalOpen(true)
+    }
+
+    const confirmDeleteStatement = () => {
+        if (deleteStatementId == null) return
+        onDelete(deleteStatementId)
+        setDeleteStatementId(null)
     }
 
     const getStatusBadge = (status: string) => {
@@ -212,7 +229,7 @@ export function BankStatementTable({ statements, onView, onDelete, onValidate, o
                                                                     <RefreshCw className="h-4 w-4" /> Reprocesser
                                                                 </DropdownMenuItem>
                                                             )}
-                                                            <DropdownMenuItem className="text-destructive gap-2" onClick={() => onDelete(statement.id)}>
+                                                            <DropdownMenuItem className="text-destructive gap-2" onClick={() => setDeleteStatementId(statement.id)}>
                                                                 <Trash2 className="h-4 w-4" /> Supprimer
                                                             </DropdownMenuItem>
                                                         </DropdownMenuContent>
@@ -237,6 +254,23 @@ export function BankStatementTable({ statements, onView, onDelete, onValidate, o
                     onUpdateStatement?.(updated)
                 }}
             />
+
+            <AlertDialog open={deleteStatementId !== null} onOpenChange={(open) => { if (!open) setDeleteStatementId(null) }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Confirmation</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Êtes-vous sûr de supprimer ce fichier ?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction onClick={(e) => { e.preventDefault(); confirmDeleteStatement() }}>
+                            Oui
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     )
 }
