@@ -301,49 +301,22 @@ function BankListPageContent() {
 
     if (loading) {
         return (
-            <div className="flex h-96 items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="flex h-48 sm:h-96 items-center justify-center">
+                <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-primary" />
             </div>
         )
     }
 
     return (
-        <div className="container mx-auto py-6 space-y-6">
-               
+        <div className="mx-auto space-y-3 w-full">
+
 
                 {/* ── Bank tab ── */}
                     <UploadBankPage onUpload={handleUpload} onViewBankStatement={() => {}} />
 
-                    <Card className="border-border/50 bg-card/50">
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <CardTitle className="text-2xl">Liste des Relevés Bancaires</CardTitle>
-                                    <CardDescription>
-                                        {filteredStatements.length} relevé{filteredStatements.length > 1 ? "s" : ""} affiché{filteredStatements.length > 1 ? "s" : ""}
-                                    </CardDescription>
-                                </div>
-                                <Button variant="destructive" size="sm" onClick={handleDeleteAll} disabled={statements.length === 0}>
-                                    Tout supprimer
-                                </Button>
-                            </div>
-                        </CardHeader>
-                    </Card>
 
-                    <div className="flex flex-wrap gap-2">
-                        <Button variant={statusFilter === "all" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("all")}>
-                            Tous
-                        </Button>
-                        <Button variant={statusFilter === "pending" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("pending")}>
-                            À traiter
-                        </Button>
-                        <Button variant={statusFilter === "validated" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("validated")}>
-                            Validés
-                        </Button>
-                        <Button variant={statusFilter === "accounted" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("accounted")}>
-                            Comptabilisés
-                        </Button>
-                    </div>
+
+
 
                     <BankStatementTable
                         statements={filteredStatements}
@@ -359,7 +332,7 @@ function BankListPageContent() {
                         }}
                     />
 
-               
+
         </div>
     )
 }
@@ -367,7 +340,7 @@ function BankListPageContent() {
 
 export default function BankListPage() {
     return (
-        <Suspense fallback={<div className="flex h-96 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+        <Suspense fallback={<div className="flex h-48 sm:h-96 items-center justify-center"><Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-primary" /></div>}>
             <BankListPageContent />
         </Suspense>
     )

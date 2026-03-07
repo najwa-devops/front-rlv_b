@@ -47,18 +47,18 @@ function getStatusBadge(status: string | undefined) {
         case "PROCESSING":
             return <Badge className="bg-blue-500/10 text-blue-600 border-blue-400/30 animate-pulse">En cours</Badge>
         case "TREATED":
-            return <Badge className="bg-blue-700/10 text-blue-800 border-blue-700/30">TraitÃ©</Badge>
+            return <Badge className="bg-blue-700/10 text-blue-800 border-blue-700/30">Traité</Badge>
         case "READY_TO_VALIDATE":
-            return <Badge className="bg-emerald-400/10 text-emerald-500 border-emerald-400/30">PrÃªt Ã  valider</Badge>
+            return <Badge className="bg-emerald-400/10 text-emerald-500 border-emerald-400/30">Prêt à valider</Badge>
         case "VALIDATED":
-            return <Badge className="bg-emerald-600 text-white border-emerald-700">ValidÃ©</Badge>
+            return <Badge className="bg-emerald-600 text-white border-emerald-700">Validé</Badge>
         case "REJECTED":
-            return <Badge className="bg-destructive text-white border-destructive">RejetÃ©</Badge>
+            return <Badge className="bg-destructive text-white border-destructive">Rejeté</Badge>
         case "ERROR":
             return <Badge className="bg-destructive/10 text-destructive border-destructive/30">Erreur</Badge>
         case "TO_VERIFY":
         case "VERIFY":
-            return <Badge className="bg-orange-400/10 text-orange-500 border-orange-400/30">Ã€ vÃ©rifier</Badge>
+            return <Badge className="bg-orange-400/10 text-orange-500 border-orange-400/30">À vérifier</Badge>
         default:
             return <Badge variant="outline">{status || "â€”"}</Badge>
     }
@@ -76,7 +76,7 @@ function FieldRow({ label, value }: { label: string; value: React.ReactNode }) {
 const EDITABLE_DETAIL_FIELDS = [
     { id: "supplier", label: "Fournisseur", keys: ["supplier", "fournisseur", "supplierName"] },
     { id: "invoiceDate", label: "Date Facture", keys: ["invoiceDate", "date", "dateFacture"] },
-    { id: "invoiceNumber", label: "NÂ° Facture", keys: ["invoiceNumber", "numeroFacture", "invoice_number"] },
+    { id: "invoiceNumber", label: "N° Facture", keys: ["invoiceNumber", "numeroFacture", "invoice_number"] },
     { id: "amountHT", label: "Montant HT", keys: ["amountHT", "montantHT", "totalHT", "baseHT"] },
     { id: "amountTVA", label: "Montant TVA", keys: ["amountTVA", "montantTVA", "tvaAmount", "tva"] },
     { id: "amountTTC", label: "Montant TTC", keys: ["amountTTC", "montantTTC", "totalTTC", "total"] },
@@ -365,9 +365,9 @@ export default function InvoiceDetailPage() {
 
     // Build field rows from fieldsData
     const knownFields: { key: string; label: string }[] = [
-        { key: "invoiceNumber",    label: "NÂ° Facture" },
-        { key: "numeroFacture",    label: "NÂ° Facture" },
-        { key: "invoice_number",   label: "NÂ° Facture" },
+        { key: "invoiceNumber",    label: "N° Facture" },
+        { key: "numeroFacture",    label: "N° Facture" },
+        { key: "invoice_number",   label: "N° Facture" },
         { key: "supplier",         label: "Fournisseur" },
         { key: "fournisseur",      label: "Fournisseur" },
         { key: "supplierName",     label: "Fournisseur" },
@@ -386,7 +386,7 @@ export default function InvoiceDetailPage() {
         { key: "rcNumber",         label: "RC" },
         { key: "address",          label: "Adresse" },
         { key: "city",             label: "Ville" },
-        { key: "phone",            label: "TÃ©lÃ©phone" },
+        { key: "phone",            label: "Telephone" },
         { key: "email",            label: "Email" },
     ]
 
@@ -406,7 +406,7 @@ export default function InvoiceDetailPage() {
         .map(([k, v]) => ({ label: k, value: v }))
 
     return (
-        <div className="container mx-auto py-6 space-y-6">
+        <div className="flex flex-col mx-auto py-0 space-y-6">
             {/* Header */}
             <div className="flex items-center gap-4">
                 <Button
@@ -475,10 +475,10 @@ export default function InvoiceDetailPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 gap-2">
                 {/* Left: Extracted Fields */}
-                <div className="xl:col-span-2 space-y-6">
-                    <Card className="border-border/50 bg-card/50">
+                <div className="w-full space-y-6">
+                    <Card className="border-border/50 bg-card/50 w-full">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-base">
                                 <FileText className="h-4 w-4 text-primary" />
@@ -542,8 +542,8 @@ export default function InvoiceDetailPage() {
                 </div>
 
                 {/* Right: Document */}
-                <div className="xl:col-span-3">
-                    <Card className="border-border/50 bg-card/50 h-[calc(100vh-170px)] overflow-hidden flex flex-col xl:sticky xl:top-6">
+                <div className="">
+                    <Card className="border-border/50 bg-card/50 h-[500] overflow-hidden flex flex-col">
                         <CardHeader className="py-3 px-4 border-b border-border/50">
                             <div className="flex items-center justify-between gap-2">
                                 <CardTitle className="flex items-center gap-2 text-base">

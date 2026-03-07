@@ -119,23 +119,13 @@ export function UploadInvoicePage({ onUpload }: UploadInvoicePageProps) {
     return (
         <div className="space-y-6 animate-fade-in">
             <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                    <div>
-                        <CardTitle className="flex items-center gap-3 text-foreground">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 glow-sm">
-                                <CloudUpload className="h-5 w-5 text-primary" />
-                            </div>
-                            Uploader des factures
-                        </CardTitle>
-                        <CardDescription>Glissez-déposez vos factures ou sélectionnez des fichiers</CardDescription>
-                    </div>
-                </CardHeader>
-                <CardContent className="space-y-6">
+                
+                <CardContent className="space-y-2">
                     <div
                         onDrop={handleDrop}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
-                        className={`relative flex min-h-[280px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-all duration-300 ${
+                        className={`relative flex min-h-[180px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-all duration-300 ${
                             isDragOver
                                 ? "border-primary bg-primary/5 scale-[1.01]"
                                 : "border-border/50 hover:border-primary/50 hover:bg-accent/30"
@@ -148,28 +138,14 @@ export function UploadInvoicePage({ onUpload }: UploadInvoicePageProps) {
                             onChange={handleFileSelect}
                             className="absolute inset-0 cursor-pointer opacity-0"
                         />
-                        <div className="flex flex-col items-center gap-4 text-center px-6">
-                            <div
-                                className={`flex h-20 w-20 items-center justify-center rounded-2xl transition-all duration-300 ${
-                                    isDragOver ? "bg-primary/20 scale-110" : "bg-primary/10"
-                                }`}
-                            >
-                                <Upload
-                                    className={`h-10 w-10 transition-all duration-300 ${
-                                        isDragOver ? "text-primary scale-110" : "text-primary"
-                                    }`}
-                                />
-                            </div>
+                        <div className="flex flex-col items-center gap-4 text-center px-2">
+                            
                             <div>
-                                <p className="text-lg font-medium text-foreground">Glissez vos factures ici</p>
                                 <p className="text-sm text-muted-foreground mt-1">
-                                    ou <span className="text-primary font-medium">cliquez pour sélectionner</span>
+                                    cliquez pour sélectionner
                                 </p>
                             </div>
-                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50">PDF, JPG, PNG, TIFF</span>
-                                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50">Max 20 Mo</span>
-                            </div>
+                           
                         </div>
                     </div>
 

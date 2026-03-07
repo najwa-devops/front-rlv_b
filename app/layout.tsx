@@ -9,7 +9,7 @@ import { DossierProvider } from "@/src/contexts/dossier-context"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "BankingOCR - Gestion intelligente des relevés bancaires",
+  title: "Evoleo Scan - Gestion intelligente des relevés bancaires",
   description: "Application de traitement OCR et validation de relevés bancaires",
   generator: "iboice.app",
   icons: {

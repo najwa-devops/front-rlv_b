@@ -130,6 +130,51 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
+  
+  /* Responsive adjustments for small screens (946x596 and similar) */
+  @media (max-width: 950px) and (max-height: 600px) {
+    html {
+      font-size: 14px;
+    }
+    
+    h1 {
+      font-size: 1.25rem !important;
+      line-height: 1.4 !important;
+    }
+    
+    h2 {
+      font-size: 1.1rem !important;
+    }
+    
+    h3 {
+      font-size: 1rem !important;
+    }
+  }
+  
+  /* Extra small screens */
+  @media (max-width: 640px) {
+    html {
+      font-size: 13px;
+    }
+  }
+}
+
+/* Compact mode for small screens */
+@media (max-width: 950px) and (max-height: 600px) {
+  .card-compact {
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+  }
+  
+  .card-header-compact {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+  
+  .card-content-compact {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
 }
 
 /* Custom utility classes for modern design */

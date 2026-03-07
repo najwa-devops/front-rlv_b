@@ -108,8 +108,8 @@ export async function parseApiError(response: Response): Promise<string> {
 // ACCOUNTING: ACCOUNTS
 // ============================================
 
-export async function getAccounts(activeOnly: boolean = true): Promise<Account[]> {
-  const response = await apiFetch(`${API_BASE_URL}/api/accounting/accounts?activeOnly=${activeOnly}`)
+export async function getAccounts(): Promise<Account[]> {
+  const response = await apiFetch(`${API_BASE_URL}/api/accounting/accounts`)
   if (!response.ok) throw new Error(await parseApiError(response))
   const data = await response.json()
   return data.accounts || []
@@ -145,17 +145,17 @@ export async function getAccountsByClasse(classe: number): Promise<Account[]> {
 }
 
 export async function getChargeAccounts(): Promise<Account[]> {
-  const accounts = await getAccounts(true)
+  const accounts = await getAccounts()
   return accounts.filter(a => a.isChargeAccount || a.classe === 6 || a.code.startsWith("6"))
 }
 
 export async function getTvaAccounts(): Promise<Account[]> {
-  const accounts = await getAccounts(true)
+  const accounts = await getAccounts()
   return accounts.filter(a => a.isTvaAccount || a.classe === 3 || a.classe === 4 || a.code.startsWith("3455") || a.code.startsWith("4455"))
 }
 
 export async function getFournisseurAccounts(): Promise<Account[]> {
-  const accounts = await getAccounts(true)
+  const accounts = await getAccounts()
   return accounts.filter(a => a.isFournisseurAccount || a.code.startsWith("4411"))
 }
 

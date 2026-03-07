@@ -173,31 +173,11 @@ function InvoiceListPageContent() {
     }
 
     return (
-        <div className="container mx-auto py-6 space-y-6">
+        <div className="container mx-auto py-0 space-y-3">
                
 
                     <UploadInvoicePage onUpload={handleUpload} />
 
-                    <Card className="border-border/50 bg-card/50">
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <CardTitle className="text-2xl">Liste des Factures</CardTitle>
-                                    <CardDescription>
-                                        {filteredInvoices.length} facture{filteredInvoices.length !== 1 ? "s" : ""} affichÃ©e{filteredInvoices.length !== 1 ? "s" : ""}
-                                    </CardDescription>
-                                </div>
-                                <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={handleDeleteAll}
-                                    disabled={invoices.length === 0}
-                                >
-                                    Tout supprimer
-                                </Button>
-                            </div>
-                        </CardHeader>
-                    </Card>
 
                     {/* Status filters */}
                     <div className="flex flex-wrap gap-2">

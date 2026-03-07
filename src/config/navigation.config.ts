@@ -34,7 +34,7 @@ export const GLOBAL_NAV_CONFIG: Record<UserRole, NavItemConfig[]> = {
             label: "Factures",
             icon: FileText,
             children: [
-                { id: "invoice-list", href: "/invoices/list", label: "Liste des factures", icon: List },
+                { id: "invoice-list", href: "/invoices/list", label: "", icon: List },
             ]
         },
     ],
@@ -54,7 +54,7 @@ export const GLOBAL_NAV_CONFIG: Record<UserRole, NavItemConfig[]> = {
             label: "Factures",
             icon: FileText,
             children: [
-                { id: "invoice-list", href: "/invoices/list", label: "Liste des factures", icon: List },
+                { id: "invoice-list", href: "/invoices/list", label: "", icon: List },
             ]
         },
     ],
@@ -74,7 +74,7 @@ export const GLOBAL_NAV_CONFIG: Record<UserRole, NavItemConfig[]> = {
             label: "Factures",
             icon: FileText,
             children: [
-                { id: "invoice-list", href: "/invoices/list", label: "Liste des factures", icon: List },
+                { id: "invoice-list", href: "/invoices/list", label: "", icon: List },
             ]
         },
     ]
@@ -100,17 +100,17 @@ export const getDossierNavConfig = (_dossierId: string | number): NavItemConfig[
         icon: FileText,
         roles: ["COMPTABLE", "SUPER_ADMIN", "FOURNISSEUR"],
         children: [
-            { id: "invoice-list", href: "/invoices/list", label: "Liste des factures", icon: List, roles: ["COMPTABLE", "SUPER_ADMIN", "FOURNISSEUR"] },
+            { id: "invoice-list", href: "/invoices/list", label: "", icon: List, roles: ["COMPTABLE", "SUPER_ADMIN", "FOURNISSEUR"] },
         ]
     },
 ];
 
 export const ROUTE_METADATA: Record<string, { title: string; breadcrumb?: string }> = {
     "/login": { title: "Connexion", breadcrumb: "Connexion" },
-    "/bank/list": { title: "Liste des Relevés Bancaires", breadcrumb: "Liste" },
+    "/bank/list": { title: "", breadcrumb: "Liste" },
     "/bank/ocr": { title: "Détails du relevé", breadcrumb: "OCR" },
-    "/invoices/list": { title: "Liste des Factures", breadcrumb: "Factures" },
-    "/invoices": { title: "Détails de la facture", breadcrumb: "Facture" },
+    "/invoices/list": { title: "", breadcrumb: "Factures" },
+    "/invoices": { title: "", breadcrumb: "Facture" },
 };
 
 export const getRouteMetadata = (pathname: string) => {

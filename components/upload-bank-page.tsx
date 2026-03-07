@@ -157,33 +157,16 @@ export function UploadBankPage({ onUpload, onViewBankStatement, isDemoMode }: Up
     const pendingCount = files.filter((f) => f.status === "pending").length
 
     return (
-        <div className="space-y-6 animate-fade-in">
-            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                    <div>
-                        <CardTitle className="flex items-center gap-3 text-foreground">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 glow-sm">
-                                <CloudUpload className="h-5 w-5 text-primary" />
-                            </div>
-                            Uploader des relevés bancaires
-                        </CardTitle>
-                        <CardDescription>Glissez-déposez vos relevés ou sélectionnez des fichiers</CardDescription>
-                    </div>
-                </CardHeader>
-                <CardContent className="space-y-6">
+        <div className="space-y-3 animate-fade-in">
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm w-full">
+
+                <CardContent className="space-y-3">
                     {/* Bank Selection */}
-                    <div className="flex flex-col sm:flex-row items-center gap-4 bg-accent/30 p-4 rounded-xl border border-border/50">
-                        <div className="flex items-center gap-3 shrink-0">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                                <Building2 className="h-5 w-5 text-primary" />
-                            </div>
-                            <div className="text-sm">
+                    <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 bg-accent/30 p-3 sm:p-4 rounded-xl border border-border/50">
+                        <div className="text-xs sm:text-sm w-full">
                                 <p className="font-semibold">Structure de la banque</p>
-                                <p className="text-muted-foreground text-xs">Forcer un modèle spécifique</p>
-                            </div>
-                        </div>
-                        <Select value={selectedBank} onValueChange={setSelectedBank}>
-                            <SelectTrigger className="w-full sm:w-[280px] bg-background">
+                                <Select value={selectedBank} onValueChange={setSelectedBank}>
+                            <SelectTrigger className="w-full bg-background text-xs sm:text-sm">
                                 <SelectValue placeholder="Choisir une banque" />
                             </SelectTrigger>
                             <SelectContent>
@@ -194,13 +177,15 @@ export function UploadBankPage({ onUpload, onViewBankStatement, isDemoMode }: Up
                                 ))}
                             </SelectContent>
                         </Select>
+                            </div>
+
                     </div>
 
                     <div
                         onDrop={handleDrop}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
-                        className={`relative flex min-h-[280px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-all duration-300 ${isDragOver
+                        className={`relative flex min-h-[180px]  cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-all duration-300 ${isDragOver
                             ? "border-primary bg-primary/5 scale-[1.01]"
                             : "border-border/50 hover:border-primary/50 hover:bg-accent/30"
                             }`}
@@ -212,56 +197,42 @@ export function UploadBankPage({ onUpload, onViewBankStatement, isDemoMode }: Up
                             onChange={handleFileSelect}
                             className="absolute inset-0 cursor-pointer opacity-0"
                         />
-                        <div className="flex flex-col items-center gap-4 text-center px-6">
-                            <div
-                                className={`flex h-20 w-20 items-center justify-center rounded-2xl transition-all duration-300 ${isDragOver ? "bg-primary/20 scale-110" : "bg-primary/10"
-                                    }`}
-                            >
-                                <Upload
-                                    className={`h-10 w-10 transition-all duration-300 ${isDragOver ? "text-primary scale-110" : "text-primary"}`}
-                                />
-                            </div>
+                        <div className="flex flex-col items-center gap-3 sm:gap-4 text-center px-4 sm:px-6">
                             <div>
-                                <p className="text-lg font-medium text-foreground">Glissez vos relevés bancaires ici</p>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                    ou <span className="text-primary font-medium">cliquez pour selectionner</span>
-                                </p>
+                                <p className="text-sm sm:text-lg font-medium text-foreground">Glissez vos relevés bancaires ici</p>
                             </div>
-                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50">PDF, XLSX, XLS</span>
-                                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50">Max 10 Mo</span>
-                            </div>
+
                         </div>
                     </div>
 
                     {files.length > 0 && (
-                        <div className="mt-6 space-y-4">
+                        <div className="mt-4 space-y-3">
                             <div className="flex items-center justify-between">
-                                <h4 className="font-medium text-foreground flex items-center gap-2">
-                                    <Sparkles className="h-4 w-4 text-primary" />
+                                <h4 className="font-medium text-foreground flex items-center gap-2 text-xs sm:text-sm">
+                                    <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
                                     Fichiers selectionnes ({files.length})
                                 </h4>
                             </div>
-                            <div className="space-y-3">
+                            <div className="space-y-2 sm:space-y-3">
                                 {files.map((fileItem, index) => (
                                     <div
                                         key={fileItem.id}
-                                        className="flex items-center gap-4 rounded-xl border border-border/50 bg-accent/30 p-4 animate-slide-up"
+                                        className="flex items-center gap-2 sm:gap-4 rounded-xl border border-border/50 bg-accent/30 p-2 sm:p-4 animate-slide-up"
                                         style={{ animationDelay: `${index * 50}ms` }}
                                     >
-                                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-border/50 bg-muted/50 overflow-hidden">
-                                            <FileText className="h-6 w-6 text-muted-foreground" />
+                                        <div className="flex h-10 w-10 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-xl border border-border/50 bg-muted/50 overflow-hidden">
+                                            <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
                                         </div>
 
                                         <div className="flex-1 min-w-0">
-                                            <p className="truncate font-medium text-foreground">{fileItem.file.name}</p>
-                                            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
+                                            <p className="truncate font-medium text-foreground text-xs sm:text-sm">{fileItem.file.name}</p>
+                                            <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-sm text-muted-foreground mt-0.5">
                                                 <span>{formatFileSize(fileItem.file.size)}</span>
-                                                <span className="w-1 h-1 rounded-full bg-muted-foreground/50" />
+                                                <span className="w-0.5 h-0.5 rounded-full bg-muted-foreground/50" />
                                                 <span className="uppercase">{fileItem.file.type.split("/")[1]}</span>
                                             </div>
                                             {fileItem.status === "uploading" && <Progress value={fileItem.progress} className="mt-2 h-1.5" />}
-                                            {fileItem.error && <p className="mt-1 text-sm text-destructive">{fileItem.error}</p>}
+                                            {fileItem.error && <p className="mt-1 text-xs text-destructive">{fileItem.error}</p>}
                                         </div>
 
                                         <div className="shrink-0">
@@ -270,24 +241,24 @@ export function UploadBankPage({ onUpload, onViewBankStatement, isDemoMode }: Up
                                                     variant="ghost"
                                                     size="icon"
                                                     onClick={() => removeFile(fileItem.id)}
-                                                    className="h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                                    className="h-7 w-7 sm:h-9 sm:w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                                                 >
-                                                    <X className="h-4 w-4" />
+                                                    <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                                 </Button>
                                             )}
                                             {fileItem.status === "uploading" && (
-                                                <div className="h-9 w-9 flex items-center justify-center">
-                                                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                                                <div className="h-7 w-7 sm:h-9 sm:w-9 flex items-center justify-center">
+                                                    <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin text-primary" />
                                                 </div>
                                             )}
                                             {fileItem.status === "success" && (
-                                                <div className="h-9 w-9 flex items-center justify-center rounded-full bg-emerald-400/10">
-                                                    <CheckCircle className="h-5 w-5 text-emerald-400" />
+                                                <div className="h-7 w-7 sm:h-9 sm:w-9 flex items-center justify-center rounded-full bg-emerald-400/10">
+                                                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-400" />
                                                 </div>
                                             )}
                                             {fileItem.status === "error" && (
-                                                <div className="h-9 w-9 flex items-center justify-center rounded-full bg-destructive/10">
-                                                    <AlertCircle className="h-5 w-5 text-destructive" />
+                                                <div className="h-7 w-7 sm:h-9 sm:w-9 flex items-center justify-center rounded-full bg-destructive/10">
+                                                    <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
                                                 </div>
                                             )}
                                         </div>
@@ -295,24 +266,24 @@ export function UploadBankPage({ onUpload, onViewBankStatement, isDemoMode }: Up
                                 ))}
                             </div>
 
-                            <div className="flex items-center justify-end gap-3 pt-4 border-t border-border/50">
+                            <div className="flex items-center justify-end gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-border/50">
                                 <Button
                                     variant="outline"
                                     onClick={() => setFiles([])}
                                     disabled={isUploading}
-                                    className="bg-transparent border-border/50"
+                                    className="bg-transparent border-border/50 text-xs sm:text-sm h-8 sm:h-9"
                                 >
                                     Annuler
                                 </Button>
-                                <Button onClick={handleUpload} disabled={pendingCount === 0 || isUploading} className="gap-2 glow-sm">
+                                <Button onClick={handleUpload} disabled={pendingCount === 0 || isUploading} className="gap-2 glow-sm text-xs sm:text-sm h-8 sm:h-9">
                                     {isUploading ? (
                                         <>
-                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
                                             Upload en cours...
                                         </>
                                     ) : (
                                         <>
-                                            <Upload className="h-4 w-4" />
+                                            <Upload className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                             Uploader ({pendingCount})
                                         </>
                                     )}

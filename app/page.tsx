@@ -11,7 +11,7 @@ export default function Home() {
   }, [router])
 
   return (
-    <div className="flex items-center justify-center h-screen">
+    <div className="flex w-screen h-screen">
       <div className="animate-pulse text-muted-foreground">Redirection vers la liste des relevés...</div>
     </div>
   )

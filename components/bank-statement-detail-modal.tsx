@@ -176,6 +176,7 @@ export function BankStatementDetailModal({
     } | null>(null)
     const [openComptePopoverTxId, setOpenComptePopoverTxId] = useState<number | null>(null)
     const [openNewComptePopover, setOpenNewComptePopover] = useState(false)
+    const [showAddTransaction, setShowAddTransaction] = useState(false)
     const lastLoadedId = useRef<number | null>(null)
 
     useEffect(() => {
@@ -614,29 +615,11 @@ export function BankStatementDetailModal({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="w-[96vw] max-w-[96vw] sm:max-w-[96vw] xl:max-w-[90vw] h-[92vh] min-h-0 flex flex-col p-0 gap-0 overflow-hidden">
-                <DialogHeader className="p-3 sm:p-4 xl:p-6 pb-2 border-b bg-card z-10">
+                <DialogHeader className="p-3  pb-2 border-b bg-card z-10">
                     <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
-                        <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => onOpenChange(false)}
-                                className="gap-2 text-muted-foreground hover:text-foreground"
-                            >
-                                <ArrowLeft className="h-4 w-4" />
-                                Retour
-                            </Button>
-                            <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
-                                <FileText className="h-5 w-5 text-emerald-600" />
-                            </div>
-                            <div>
-                                <DialogTitle className="text-lg sm:text-xl truncate">Détail du Relevé Bancaire</DialogTitle>
-                                <DialogDescription className="truncate">
-                                    {localStatement.originalName} • {localStatement.bankName}
-                                </DialogDescription>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 xl:flex xl:items-center gap-3 sm:gap-4 xl:gap-6 xl:pr-8">
+                        
+                        <div className="grid grid-cols-6  gap-0 ">
+                             
                             <div className="text-right">
                                 <span className="text-xs text-muted-foreground uppercase font-semibold block">Statut</span>
                                 {getStatusBadge(localStatement.status)}
@@ -646,7 +629,8 @@ export function BankStatementDetailModal({
                                     </p>
                                 )}
                             </div>
-                            <div className="text-right xl:border-l xl:pl-6">
+                            
+                            <div className="text-right ">
                                 <span className="text-xs text-muted-foreground uppercase font-semibold block">Compte</span>
                                 <Badge variant={localStatement.isLinked ? "default" : "outline"}
                                     className={cn(
@@ -656,20 +640,7 @@ export function BankStatementDetailModal({
                                     )}>
                                     {localStatement.isLinked ? "LIÉ" : "NON LIÉ"}
                                 </Badge>
-                                {localStatement.status === "ERROR" || localStatement.status === "PARTIAL_SUCCESS" ? (
-                                    <div className="flex flex-col gap-1 mt-1">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={handleRetry}
-                                            disabled={loading}
-                                            className="h-7 text-[10px] gap-1 px-2 border-orange-200 text-orange-700 hover:bg-orange-50"
-                                        >
-                                            <Loader2 className={cn("h-3 w-3", loading && "animate-spin")} />
-                                            Relancer
-                                        </Button>
-                                    </div>
-                                ) : null}
+                               
                             </div>
                             <div className="text-right xl:border-l xl:pl-6">
                                 <span className="text-xs text-muted-foreground uppercase font-semibold block">Règle TTC</span>
@@ -689,49 +660,7 @@ export function BankStatementDetailModal({
                                     {ttcUpdating ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" /> : null}
                                 </div>
                             </div>
-                            <div className="text-right xl:border-l xl:pl-6 space-y-1">
-                                <span className="text-xs text-muted-foreground uppercase font-semibold block">Outils</span>
-                                <Dialog>
-                                    <DialogTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-7 text-[10px] gap-1 px-2 border-primary/20 hover:bg-primary/5"
-                                        >
-                                            <Eye className="h-3 w-3" />
-                                            Inspecter OCR
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent className="max-w-[50vw] sm:max-w-[50vw] w-full max-h-[85vh] flex flex-col p-6">
-                                        <DialogHeader>
-                                            <DialogTitle>Inspection du Texte Extrait (OCR)</DialogTitle>
-                                            <DialogDescription className="truncate">
-                                                Visualisez le texte brut et nettoyé pour diagnostiquer les erreurs d'extraction.
-                                            </DialogDescription>
-                                        </DialogHeader>
-                                        <Tabs defaultValue="cleaned" className="flex-1 flex flex-col overflow-hidden">
-                                            <TabsList className="mb-4">
-                                                <TabsTrigger value="cleaned">Texte Nettoyé</TabsTrigger>
-                                                <TabsTrigger value="raw">Texte Brut</TabsTrigger>
-                                            </TabsList>
-                                            <TabsContent value="cleaned" className="flex-1 overflow-hidden">
-                                                <ScrollArea className="h-[50vh] w-full rounded-md border p-4 bg-muted/20">
-                                                    <pre className="text-xs whitespace-pre-wrap font-mono leading-relaxed">
-                                                        {localStatement.cleanedOcrText || "Aucun texte nettoyé disponible."}
-                                                    </pre>
-                                                </ScrollArea>
-                                            </TabsContent>
-                                            <TabsContent value="raw" className="flex-1 overflow-hidden">
-                                                <ScrollArea className="h-[50vh] w-full rounded-md border p-4 bg-muted/20">
-                                                    <pre className="text-xs whitespace-pre-wrap font-mono leading-relaxed">
-                                                        {localStatement.rawOcrText || "Aucun texte brut disponible."}
-                                                    </pre>
-                                                </ScrollArea>
-                                            </TabsContent>
-                                        </Tabs>
-                                    </DialogContent>
-                                </Dialog>
-                            </div>
+                           
                             <div className="text-right xl:border-l xl:pl-6">
                                 <span className="text-xs text-muted-foreground uppercase font-semibold block">Transactions</span>
                                 <span className="font-bold text-base sm:text-lg">{editableTransactions.length || 0}</span>
@@ -764,122 +693,137 @@ export function BankStatementDetailModal({
                     )}
 
                     {!isAccounted && (
-                        <div className="rounded-md border bg-card shadow-sm p-3 sm:p-4 shrink-0">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-3 items-end">
-                                <div className="space-y-1">
-                                    <Label>N° Transaction</Label>
-                                    <Input
-                                        type="number"
-                                        min={1}
-                                        value={newTransaction.transactionIndex}
-                                        onChange={(e) => setNewTransaction((prev) => ({ ...prev, transactionIndex: Number(e.target.value || 1) }))}
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label>Date Opération</Label>
-                                    <Input
-                                        type="date"
-                                        value={newTransaction.dateOperation}
-                                        onChange={(e) => setNewTransaction((prev) => ({ ...prev, dateOperation: e.target.value }))}
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label>Date Valeur</Label>
-                                    <Input
-                                        type="date"
-                                        value={newTransaction.dateValeur}
-                                        onChange={(e) => setNewTransaction((prev) => ({ ...prev, dateValeur: e.target.value }))}
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label>Compte</Label>
-                                    <Popover open={openNewComptePopover} onOpenChange={setOpenNewComptePopover}>
-                                        <PopoverTrigger asChild>
-                                            <div
-                                                className="min-h-10 rounded-md border px-3 py-2 text-sm cursor-pointer hover:bg-muted/40"
-                                                role="button"
-                                                tabIndex={0}
-                                            >
-                                                <div className="font-mono">
-                                                    {newTransaction.compte || "Choisir un compte"}
-                                                </div>
-                                                {selectedNewTransactionAccount ? (
-                                                    <div className="text-[11px] text-muted-foreground leading-tight mt-0.5">
-                                                        {selectedNewTransactionAccount.libelle}
-                                                    </div>
-                                                ) : null}
-                                            </div>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-[320px] p-0" align="start">
-                                            <Command>
-                                                <CommandInput placeholder="Chercher un compte..." />
-                                                <CommandList className="max-h-[260px] overflow-y-auto">
-                                                    <CommandEmpty>Aucun compte trouvé.</CommandEmpty>
-                                                    <CommandGroup>
-                                                        {loadingAccounts ? (
-                                                            <div className="flex items-center justify-center p-4">
-                                                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                                                Chargement...
-                                                            </div>
-                                                        ) : accounts.map((account) => (
-                                                            <CommandItem
-                                                                key={account.id}
-                                                                value={`${account.code} ${account.libelle}`}
-                                                                onSelect={() => {
-                                                                    setNewTransaction((prev) => ({ ...prev, compte: account.code }))
-                                                                    setOpenNewComptePopover(false)
-                                                                }}
-                                                                className="flex flex-col items-start gap-1 py-2 cursor-pointer"
-                                                            >
-                                                                <div className="flex items-center w-full justify-between">
-                                                                    <span className="font-medium text-sm">{account.libelle}</span>
-                                                                    {newTransaction.compte === account.code ? (
-                                                                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                                                                    ) : null}
-                                                                </div>
-                                                                <span className="text-xs text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">
-                                                                    {account.code}
-                                                                </span>
-                                                            </CommandItem>
-                                                        ))}
-                                                    </CommandGroup>
-                                                </CommandList>
-                                            </Command>
-                                        </PopoverContent>
-                                    </Popover>
-                                </div>
-                                <div className="space-y-1 xl:col-span-2">
-                                    <Label>Libellé</Label>
-                                    <Input
-                                        value={newTransaction.libelle}
-                                        onChange={(e) => setNewTransaction((prev) => ({ ...prev, libelle: e.target.value }))}
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label>Débit</Label>
-                                    <Input
-                                        type="number"
-                                        step="0.01"
-                                        value={newTransaction.debit}
-                                        onChange={(e) => setNewTransaction((prev) => ({ ...prev, debit: Number(e.target.value || 0) }))}
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label>Crédit</Label>
-                                    <Input
-                                        type="number"
-                                        step="0.01"
-                                        value={newTransaction.credit}
-                                        onChange={(e) => setNewTransaction((prev) => ({ ...prev, credit: Number(e.target.value || 0) }))}
-                                    />
-                                </div>
-                            </div>
-                            <div className="mt-3 flex justify-end">
-                                <Button className="gap-2" onClick={handleAddTransaction}>
-                                    <Plus className="h-4 w-4" />
-                                    Ajouter transaction
+                        <div className="shrink-0">
+                            <div className="flex items-center justify-between mb-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setShowAddTransaction(!showAddTransaction)}
+                                    className="gap-2"
+                                >
+                                    <Plus className="h-3.5 w-3.5" />
+                                    {showAddTransaction ? "Masquer l'ajout" : "Ajouter transaction"}
                                 </Button>
                             </div>
+                            {showAddTransaction && (
+                                <div className="rounded-md border bg-card shadow-sm p-3 sm:p-4 animate-fade-in">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-3 items-end">
+                                        <div className="space-y-1">
+                                            <Label>N° Transaction</Label>
+                                            <Input
+                                                type="number"
+                                                min={1}
+                                                value={newTransaction.transactionIndex}
+                                                onChange={(e) => setNewTransaction((prev) => ({ ...prev, transactionIndex: Number(e.target.value || 1) }))}
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label>Date Opération</Label>
+                                            <Input
+                                                type="date"
+                                                value={newTransaction.dateOperation}
+                                                onChange={(e) => setNewTransaction((prev) => ({ ...prev, dateOperation: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label>Date Valeur</Label>
+                                            <Input
+                                                type="date"
+                                                value={newTransaction.dateValeur}
+                                                onChange={(e) => setNewTransaction((prev) => ({ ...prev, dateValeur: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label>Compte</Label>
+                                            <Popover open={openNewComptePopover} onOpenChange={setOpenNewComptePopover}>
+                                                <PopoverTrigger asChild>
+                                                    <div
+                                                        className="min-h-10 rounded-md border px-3 py-2 text-sm cursor-pointer hover:bg-muted/40"
+                                                        role="button"
+                                                        tabIndex={0}
+                                                    >
+                                                        <div className="font-mono">
+                                                            {newTransaction.compte || "Choisir un compte"}
+                                                        </div>
+                                                        {selectedNewTransactionAccount ? (
+                                                            <div className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+                                                                {selectedNewTransactionAccount.libelle}
+                                                            </div>
+                                                        ) : null}
+                                                    </div>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-[320px] p-0" align="start">
+                                                    <Command>
+                                                        <CommandInput placeholder="Chercher un compte..." />
+                                                        <CommandList className="max-h-[260px] overflow-y-auto">
+                                                            <CommandEmpty>Aucun compte trouvé.</CommandEmpty>
+                                                            <CommandGroup>
+                                                                {loadingAccounts ? (
+                                                                    <div className="flex items-center justify-center p-4">
+                                                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                                        Chargement...
+                                                                    </div>
+                                                                ) : accounts.map((account) => (
+                                                                    <CommandItem
+                                                                        key={account.id}
+                                                                        value={`${account.code} ${account.libelle}`}
+                                                                        onSelect={() => {
+                                                                            setNewTransaction((prev) => ({ ...prev, compte: account.code }))
+                                                                            setOpenNewComptePopover(false)
+                                                                        }}
+                                                                        className="flex flex-col items-start gap-1 py-2 cursor-pointer"
+                                                                    >
+                                                                        <div className="flex items-center w-full justify-between">
+                                                                            <span className="font-medium text-sm">{account.libelle}</span>
+                                                                            {newTransaction.compte === account.code ? (
+                                                                                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                                                            ) : null}
+                                                                        </div>
+                                                                        <span className="text-xs text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">
+                                                                            {account.code}
+                                                                        </span>
+                                                                    </CommandItem>
+                                                                ))}
+                                                            </CommandGroup>
+                                                        </CommandList>
+                                                    </Command>
+                                                </PopoverContent>
+                                            </Popover>
+                                        </div>
+                                        <div className="space-y-1 xl:col-span-2">
+                                            <Label>Libellé</Label>
+                                            <Input
+                                                value={newTransaction.libelle}
+                                                onChange={(e) => setNewTransaction((prev) => ({ ...prev, libelle: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label>Débit</Label>
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                value={newTransaction.debit}
+                                                onChange={(e) => setNewTransaction((prev) => ({ ...prev, debit: Number(e.target.value || 0) }))}
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label>Crédit</Label>
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                value={newTransaction.credit}
+                                                onChange={(e) => setNewTransaction((prev) => ({ ...prev, credit: Number(e.target.value || 0) }))}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="mt-3 flex justify-end">
+                                        <Button className="gap-2" onClick={handleAddTransaction}>
+                                            <Plus className="h-4 w-4" />
+                                            Ajouter transaction
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -917,41 +861,9 @@ export function BankStatementDetailModal({
                                     </div>
                                 </div>
                             )}
-                            <div className="min-h-[220px] max-h-[42vh] overflow-y-auto">
-                                <div className="xl:hidden space-y-2 p-2">
-                                    {sortByIndex(editableTransactions).map((tx) => {
-                                        const displayCompte = resolveDisplayCompte(tx.compte)
-                                        const isCommissionLine = isCommissionVisualLine(tx.libelle)
-                                        return (
-                                            <div key={tx.id} className={cn("rounded-md border p-3 bg-background/70", isCommissionLine && "bg-sky-50/70")}>
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <Badge variant="secondary" className="font-normal text-xs">
-                                                        {tx.transactionIndex || tx.id}
-                                                    </Badge>
-                                                    <div className="text-xs text-muted-foreground">
-                                                        {tx.dateOperation || "-"} • {tx.dateValeur || "-"}
-                                                    </div>
-                                                </div>
-                                                <div className="mt-2 text-sm font-mono">{displayCompte}</div>
-                                                <div className="mt-1 text-sm break-words">{tx.libelle || "-"}</div>
-                                                <div className="mt-2 flex items-center justify-between text-sm">
-                                                    <span className="text-red-600">
-                                                        Débit: {Number(tx.debit || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                    </span>
-                                                    <span className="text-emerald-600">
-                                                        Crédit: {Number(tx.credit || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
-                                    {editableTransactions.length === 0 && (
-                                        <div className="h-24 flex items-center justify-center text-muted-foreground text-sm">
-                                            Aucune transaction trouvée pour ce relevé
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="hidden xl:block overflow-x-scroll">
+                            <div className="min-h-[220px] overflow-y-auto">
+                                
+                                <div className=" xl:block overflow-x-scroll">
                                 <Table>
                                     <TableHeader>
                                         <TableRow className="bg-muted/50 hover:bg-muted/50">
@@ -1142,14 +1054,10 @@ export function BankStatementDetailModal({
                     )}
                 </div>
             </DialogContent>
+
             <Dialog open={showAccountingModal} onOpenChange={setShowAccountingModal}>
                 <DialogContent className="max-w-[95vw] sm:max-w-5xl">
-                    <DialogHeader>
-                        <DialogTitle>Simulation de Comptabilisation</DialogTitle>
-                        <DialogDescription className="truncate">
-                            Chaque transaction du relevé est transformée automatiquement en 2 écritures comptables.
-                        </DialogDescription>
-                    </DialogHeader>
+              
 
                     <div className="space-y-4">
                         {(accountingLoading || confirmLoading) ? (
@@ -1162,26 +1070,8 @@ export function BankStatementDetailModal({
                         {simulationResult?.entries?.length ? (
                             <div className="rounded-md border overflow-hidden">
                                 <div className="max-h-[55vh] overflow-auto">
-                                    <div className="xl:hidden space-y-2 p-2">
-                                        {simulationResult.entries.map((row: any, index: number) => (
-                                            <div key={`${row.numero}-${index}`} className={cn("rounded-md border p-3 bg-background/70", row.counterpart && "bg-muted/40")}>
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <span className="text-xs font-mono text-muted-foreground">#{row.numero}</span>
-                                                    <span className="text-xs text-muted-foreground">
-                                                        {row.dateOperation ? new Date(row.dateOperation).toLocaleDateString("fr-FR") : "-"}
-                                                    </span>
-                                                </div>
-                                                <div className="mt-1 text-sm">{row.moisTexte} ({row.nmoisTexte}) • {row.journal}</div>
-                                                <div className="mt-1 text-sm font-mono">{row.ncompte}</div>
-                                                <div className="mt-1 text-sm break-words">{row.libelle || "-"}</div>
-                                                <div className="mt-2 flex items-center justify-between text-sm">
-                                                    <span className="text-red-600">{Number(row.debit || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                                    <span className="text-emerald-600">{Number(row.credit || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="hidden xl:block overflow-x-scroll">
+                                    
+                                    <div className=" overflow-x-scroll">
                                     <Table>
                                         <TableHeader>
                                             <TableRow className="bg-muted/40">
