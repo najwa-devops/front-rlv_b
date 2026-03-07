@@ -307,7 +307,7 @@
 
 /* Ensure text layer spans have correct selection behavior */
 .react-pdf__Page__textLayer span {
-  color: transparent !important;
+  color: oklch(0 0 0 / 0.01) !important;
   cursor: text !important;
 }
 

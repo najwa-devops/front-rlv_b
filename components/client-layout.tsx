@@ -83,8 +83,8 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
 
             {/* Main content */}
             <main className="flex-1 overflow-auto">
-                <div className="container mx-auto px-3 sm:px-6 py-4 sm:py-6">
-                    <div className="mb-4 sm:mb-6 sm:px-0">
+                <div className="w-full px-2 sm:px-4 py-2 sm:py-4">
+                    <div className="mb-3 sm:mb-4">
                         <h1 className="text-xl sm:text-3xl font-bold tracking-tight text-foreground">
                             {pageTitle}
                         </h1>
