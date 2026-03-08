@@ -4,7 +4,10 @@ import {
   UpdateAccountRequest,
   BankStatementV2,
   BankTransactionV2,
-  BankOption
+  BankOption,
+  CentreMonetiqueBatchDetail,
+  CentreMonetiqueBatchSummary,
+  CentreMonetiqueUploadResponse
 } from "./types"
 
 const RAW_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ""
@@ -522,6 +525,81 @@ export async function deleteDossier(id: number): Promise<void> {
 }
 
 // ============================================
+// CENTRE MONETIQUE API
+// ============================================
+
+export async function uploadCentreMonetique(
+  file: File,
+  year?: number,
+  structure: "AUTO" | "CMI" | "BARID_BANK" = "AUTO"
+): Promise<CentreMonetiqueUploadResponse> {
+  const formData = new FormData()
+  formData.append("file", file)
+  if (year) formData.append("year", String(year))
+  formData.append("structure", structure)
+
+  const response = await apiFetch(`${API_BASE_URL}/api/v2/centre-monetique/upload`, {
+    method: "POST",
+    body: formData,
+  })
+  if (!response.ok) throw new Error(await parseApiError(response))
+  return response.json()
+}
+
+export async function getCentreMonetiqueBatches(limit = 50): Promise<CentreMonetiqueBatchSummary[]> {
+  const response = await apiFetch(`${API_BASE_URL}/api/v2/centre-monetique?limit=${limit}`)
+  if (!response.ok) throw new Error(await parseApiError(response))
+  const data = await response.json()
+  return data.batches || []
+}
+
+export async function getCentreMonetiqueBatchById(id: number, includeRawOcr = false): Promise<CentreMonetiqueBatchDetail> {
+  const response = await apiFetch(`${API_BASE_URL}/api/v2/centre-monetique/${id}?includeRawOcr=${includeRawOcr}`)
+  if (!response.ok) throw new Error(await parseApiError(response))
+  return response.json()
+}
+
+export async function reprocessCentreMonetique(
+  id: number,
+  year?: number,
+  structure: "AUTO" | "CMI" | "BARID_BANK" = "AUTO"
+): Promise<CentreMonetiqueUploadResponse> {
+  const queryParts: string[] = []
+  if (year) queryParts.push(`year=${year}`)
+  if (structure) queryParts.push(`structure=${encodeURIComponent(structure)}`)
+  const query = queryParts.length ? `?${queryParts.join("&")}` : ""
+  const response = await apiFetch(`${API_BASE_URL}/api/v2/centre-monetique/${id}/reprocess${query}`, {
+    method: "POST",
+  })
+  if (!response.ok) throw new Error(await parseApiError(response))
+  return response.json()
+}
+
+export async function deleteCentreMonetiqueBatch(id: number): Promise<void> {
+  const response = await apiFetch(`${API_BASE_URL}/api/v2/centre-monetique/${id}`, {
+    method: "DELETE",
+  })
+  if (!response.ok) throw new Error(await parseApiError(response))
+}
+
+export async function saveCentreMonetiqueRows(
+  id: number,
+  rows: CentreMonetiqueBatchDetail["rows"]
+): Promise<CentreMonetiqueUploadResponse> {
+  const response = await apiFetch(`${API_BASE_URL}/api/v2/centre-monetique/${id}/rows`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(rows || []),
+  })
+  if (!response.ok) throw new Error(await parseApiError(response))
+  return response.json()
+}
+
+export function getCentreMonetiqueFileUrl(id: number): string {
+  return `${API_BASE_URL}/api/v2/centre-monetique/${id}/file`
+}
+
+// ============================================
 // UNIFIED API OBJECT
 // ============================================
 
@@ -570,4 +648,13 @@ export const api = {
   getTransactionsByStatementId,
   updateBankTransaction,
   createBankTransaction,
+
+  // Centre Monetique
+  uploadCentreMonetique,
+  getCentreMonetiqueBatches,
+  getCentreMonetiqueBatchById,
+  reprocessCentreMonetique,
+  deleteCentreMonetiqueBatch,
+  saveCentreMonetiqueRows,
+  getCentreMonetiqueFileUrl,
 }

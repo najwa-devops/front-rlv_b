@@ -228,6 +228,7 @@ export function UploadBankPage({ onUpload, onViewBankStatement, isDemoMode }: Up
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
                         className={`relative flex min-h-[180px]  cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-all duration-300 ${isDragOver
+                        className={`relative flex min-h-[120px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-all duration-300 ${isDragOver
                             ? "border-primary bg-primary/5 scale-[1.01]"
                             : "border-border/50 hover:border-primary/50 hover:bg-accent/30"
                             }`}
@@ -242,6 +243,18 @@ export function UploadBankPage({ onUpload, onViewBankStatement, isDemoMode }: Up
                         <div className="flex flex-col items-center gap-3 sm:gap-4 text-center px-4 sm:px-6">
                             <div>
                                 <p className="text-sm sm:text-lg font-medium text-foreground">Glissez vos relevés bancaires ici</p>
+                        <div className="flex flex-col items-center gap-3 text-center px-6">
+                            <div
+                                className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300 ${isDragOver ? "bg-primary/20 scale-110" : "bg-primary/10"
+                                    }`}
+                            >
+                                <Upload
+                                    className={`h-5 w-5 transition-all duration-300 ${isDragOver ? "text-primary scale-110" : "text-primary"}`}
+                                />
+                            </div>
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50">PDF, XLSX, XLS</span>
+                                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50">Max 10 Mo</span>
                             </div>
 
                         </div>

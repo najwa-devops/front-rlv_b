@@ -204,3 +204,50 @@ export interface BankTransactionV2 {
 export interface SearchCriteria {
   [key: string]: string
 }
+
+// ============================================
+// TYPES CENTRE MONETIQUE
+// ============================================
+
+export interface CentreMonetiqueExtractionRow {
+  section: string
+  date: string
+  reference: string
+  montant: string
+  debit: string
+  credit: string
+  dc?: string
+}
+
+export interface CentreMonetiqueBatchSummary {
+  id: number
+  filename: string
+  originalName: string
+  status: string
+  structure: "AUTO" | "CMI" | "BARID_BANK" | string
+  statementPeriod: string
+  totalTransactions: string
+  totalMontant: string
+  totalCommissionHt: string
+  totalTvaSurCommissions: string
+  soldeNetRemise: string
+  totalDebit: string
+  totalCredit: string
+  transactionCount: number
+  createdAt: string
+  updatedAt: string
+  errorMessage: string
+}
+
+export interface CentreMonetiqueBatchDetail extends CentreMonetiqueBatchSummary {
+  fileContentType: string
+  fileSize: number
+  rawOcrText?: string | null
+  rows: CentreMonetiqueExtractionRow[]
+}
+
+export interface CentreMonetiqueUploadResponse {
+  message: string
+  batch: CentreMonetiqueBatchDetail
+  rows: CentreMonetiqueExtractionRow[]
+}

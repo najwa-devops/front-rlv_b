@@ -3,6 +3,8 @@ import {
     List,
     ChevronLeft,
     FileText,
+
+    ReceiptText
 } from "lucide-react";
 import { UserRole } from "@/src/types";
 
@@ -26,6 +28,7 @@ export const GLOBAL_NAV_CONFIG: Record<UserRole, NavItemConfig[]> = {
             icon: Building2,
             children: [
                 { id: "bank-list", href: "/bank/list", label: "Liste des relevés", icon: List, badgeKey: "pendingCount" },
+                { id: "centre-monetique", href: "/centre-monetique", label: "Centre Monétique", icon: ReceiptText },
             ]
         },
         {
@@ -46,6 +49,7 @@ export const GLOBAL_NAV_CONFIG: Record<UserRole, NavItemConfig[]> = {
             icon: Building2,
             children: [
                 { id: "bank-list", href: "/bank/list", label: "Liste des relevés", icon: List, badgeKey: "pendingCount" },
+                { id: "centre-monetique", href: "/centre-monetique", label: "Centre Monétique", icon: ReceiptText },
             ]
         },
         {
@@ -66,6 +70,7 @@ export const GLOBAL_NAV_CONFIG: Record<UserRole, NavItemConfig[]> = {
             icon: Building2,
             children: [
                 { id: "bank-list", href: "/bank/list", label: "Liste des relevés", icon: List, badgeKey: "pendingCount" },
+                { id: "centre-monetique", href: "/centre-monetique", label: "Centre Monétique", icon: ReceiptText },
             ]
         },
         {
@@ -91,6 +96,7 @@ export const getDossierNavConfig = (_dossierId: string | number): NavItemConfig[
         roles: ["COMPTABLE", "SUPER_ADMIN", "FOURNISSEUR"],
         children: [
             { id: "bank-list", href: "/bank/list", label: "Liste des relevés", icon: List, badgeKey: "pendingCount", roles: ["COMPTABLE", "SUPER_ADMIN", "FOURNISSEUR"] },
+            { id: "centre-monetique", href: "/centre-monetique", label: "Centre Monétique", icon: ReceiptText, roles: ["COMPTABLE", "SUPER_ADMIN", "FOURNISSEUR"] },
         ]
     },
     {
@@ -111,6 +117,7 @@ export const ROUTE_METADATA: Record<string, { title: string; breadcrumb?: string
     "/bank/ocr": { title: "Détails du relevé", breadcrumb: "OCR" },
     "/invoices/list": { title: "", breadcrumb: "Factures" },
     "/invoices": { title: "", breadcrumb: "Facture" },
+    "/centre-monetique": { title: "Centre Monétique", breadcrumb: "Centre Monétique" },
 };
 
 export const getRouteMetadata = (pathname: string) => {

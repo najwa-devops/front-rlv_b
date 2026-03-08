@@ -6,6 +6,19 @@ import { Loader2, Building2, FileText } from "lucide-react"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Loader2 } from "lucide-react"
+import { Card, CardDescription, CardHeader } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { BankStatementTable } from "@/components/bank-statement-table"
 import { UploadBankPage } from "@/components/upload-bank-page"
 import { UploadInvoicePage } from "@/components/upload-invoice-page"
@@ -22,6 +35,12 @@ function BankListPageContent() {
     const [loading, setLoading] = useState(true)
     const [statements, setStatements] = useState<BankStatementV2[]>([])
     const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "validated" | "accounted">("all")
+    const [deleteAllOpen, setDeleteAllOpen] = useState(false)
+
+    const isAccountedStatus = (status?: string) => {
+        const normalized = (status || "").toUpperCase()
+        return normalized === "COMPTABILISE" || normalized === "COMPTABILISÉ"
+    }
 
     // Invoice tab state
     const [invoicesLoading, setInvoicesLoading] = useState(false)
@@ -42,7 +61,22 @@ function BankListPageContent() {
     }
 
     useEffect(() => {
-        loadData()
+        const resetTemporaryStatementsOnRefresh = async () => {
+            setLoading(true)
+            try {
+                const existing = await api.getAllBankStatements({ limit: 1000 })
+                const temporary = (Array.isArray(existing) ? existing : []).filter((s) => !isAccountedStatus(s.status))
+                if (temporary.length > 0) {
+                    await Promise.allSettled(temporary.map((s) => api.deleteBankStatement(s.id)))
+                }
+            } catch (error) {
+                console.error("Error clearing temporary bank statements on refresh:", error)
+            } finally {
+                await loadData()
+            }
+        }
+
+        resetTemporaryStatementsOnRefresh()
     }, [])
 
     useEffect(() => {
@@ -69,7 +103,7 @@ function BankListPageContent() {
     const filteredStatements = statements.filter((s) => {
         const status = (s.status || "").toUpperCase()
         const isValidated = status === "VALIDATED" || status === "VALIDE"
-        const isAccounted = status === "COMPTABILISE" || status === "COMPTABILISÉ"
+        const isAccounted = isAccountedStatus(status)
         const isPending = !isValidated && !isAccounted
 
         if (statusFilter === "validated") return isValidated
@@ -176,14 +210,19 @@ function BankListPageContent() {
         }
     }
 
-    const handleDeleteAll = async () => {
-        if (!confirm("Supprimer tous les relevés bancaires ?")) return
+    const handleDeleteAll = () => {
+        setDeleteAllOpen(true)
+    }
+
+    const confirmDeleteAll = async () => {
         try {
             await api.deleteAllBankStatements()
             await loadData()
             toast.success("Tous les relevés ont été supprimés")
         } catch (error) {
             toast.error("Erreur lors de la suppression globale")
+        } finally {
+            setDeleteAllOpen(false)
         }
     }
 
@@ -333,6 +372,67 @@ function BankListPageContent() {
                     />
 
 
+        <div className="container mx-auto py-6 space-y-6">
+            <UploadBankPage onUpload={handleUpload} onViewBankStatement={() => {}} />
+
+            <Card className="border-border/50 bg-card/50">
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <CardDescription>
+                            {filteredStatements.length} relevé{filteredStatements.length > 1 ? "s" : ""} affiché{filteredStatements.length > 1 ? "s" : ""}
+                        </CardDescription>
+                        <Button variant="destructive" size="sm" onClick={handleDeleteAll} disabled={statements.length === 0}>
+                            Tout supprimer
+                        </Button>
+                    </div>
+                </CardHeader>
+            </Card>
+
+            <div className="flex flex-wrap gap-2">
+                <Button variant={statusFilter === "all" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("all")}>
+                    Tous
+                </Button>
+                <Button variant={statusFilter === "pending" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("pending")}>
+                    À traiter
+                </Button>
+                <Button variant={statusFilter === "validated" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("validated")}>
+                    Validés
+                </Button>
+                <Button variant={statusFilter === "accounted" ? "default" : "outline"} size="sm" onClick={() => setStatusFilter("accounted")}>
+                    Comptabilisés
+                </Button>
+            </div>
+
+            <BankStatementTable
+                statements={filteredStatements}
+                onView={handleView}
+                onDelete={handleDelete}
+                onValidate={handleValidate}
+                onMarkAsAccounted={handleMarkAsAccounted}
+                onReprocess={handleReprocess}
+                onUpdateStatement={(updated) => {
+                    setStatements((prev) =>
+                        prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s))
+                    )
+                }}
+            />
+
+            <AlertDialog open={deleteAllOpen} onOpenChange={setDeleteAllOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Confirmation</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Êtes-vous sûr de supprimer ces fichiers ?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction onClick={(e) => { e.preventDefault(); void confirmDeleteAll() }}>
+                            Oui
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }
