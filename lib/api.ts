@@ -37,7 +37,7 @@ export type UpsertAccountingConfigRequest = Omit<AccountingConfigDto, "id">
 async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const headers = new Headers(init?.headers)
 
-  const response = await fetch(input, { ...init, headers })
+  const response = await fetch(input, { ...init, headers, credentials: "include" })
 
   if (!response.ok) return response
 
@@ -111,11 +111,27 @@ export async function parseApiError(response: Response): Promise<string> {
 // ACCOUNTING: ACCOUNTS
 // ============================================
 
-export async function getAccounts(activeOnly: boolean = true): Promise<Account[]> {
-  const response = await apiFetch(`${API_BASE_URL}/api/accounting/accounts?activeOnly=${activeOnly}`)
+export async function getAccounts(includeBankJournalOptions: boolean = false): Promise<Account[]> {
+  const endpoint = includeBankJournalOptions
+    ? `${API_BASE_URL}/api/v2/accounting/accounts/options`
+    : `${API_BASE_URL}/api/accounting/accounts`
+  const response = await apiFetch(endpoint)
   if (!response.ok) throw new Error(await parseApiError(response))
   const data = await response.json()
-  return data.accounts || []
+  const accounts = data.accounts || data.comptes || []
+
+  if (!includeBankJournalOptions) {
+    return accounts
+  }
+
+  return accounts.map((account: any, index: number) => ({
+    id: Number(index + 1),
+    code: account.code,
+    libelle: account.libelle,
+    codejrn: account.codejrn || "",
+    classe: 0,
+    active: true,
+  }))
 }
 
 export async function getAccountById(id: number): Promise<Account> {
@@ -148,17 +164,17 @@ export async function getAccountsByClasse(classe: number): Promise<Account[]> {
 }
 
 export async function getChargeAccounts(): Promise<Account[]> {
-  const accounts = await getAccounts(true)
+  const accounts = await getAccounts()
   return accounts.filter(a => a.isChargeAccount || a.classe === 6 || a.code.startsWith("6"))
 }
 
 export async function getTvaAccounts(): Promise<Account[]> {
-  const accounts = await getAccounts(true)
+  const accounts = await getAccounts()
   return accounts.filter(a => a.isTvaAccount || a.classe === 3 || a.classe === 4 || a.code.startsWith("3455") || a.code.startsWith("4455"))
 }
 
 export async function getFournisseurAccounts(): Promise<Account[]> {
-  const accounts = await getAccounts(true)
+  const accounts = await getAccounts()
   return accounts.filter(a => a.isFournisseurAccount || a.code.startsWith("4411"))
 }
 

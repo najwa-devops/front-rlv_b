@@ -129,6 +129,55 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
+    font-size: 12px;
+  }
+  html {
+    font-size: 12px;
+  }
+
+  /* Responsive adjustments for small screens (946x596 and similar) */
+  @media (max-width: 950px) and (max-height: 600px) {
+    html {
+      font-size: 8px;
+    }
+
+    h1 {
+      font-size: 1rem !important;
+      line-height: 1.4 !important;
+    }
+
+    h2 {
+      font-size: 0.875rem !important;
+    }
+
+    h3 {
+      font-size: 0.75rem !important;
+    }
+  }
+
+  /* Extra small screens */
+  @media (max-width: 640px) {
+    html {
+      font-size: 7px;
+    }
+  }
+}
+
+/* Compact mode for small screens */
+@media (max-width: 950px) and (max-height: 600px) {
+  .card-compact {
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+  }
+  
+  .card-header-compact {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+  
+  .card-content-compact {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
   }
 }
 
@@ -244,6 +293,8 @@
 }
 
 /* react-pdf selection fixes */
+.react-pdf__Page__textContent,
+.textLayer,
 .react-pdf__Page__textLayer {
   z-index: 20 !important;
   opacity: 1 !important;
@@ -261,13 +312,16 @@
 }
 
 /* Ensure text layer spans have correct selection behavior */
+.react-pdf__Page__textContent span,
+.textLayer span,
 .react-pdf__Page__textLayer span {
-  color: transparent !important;
+  color: oklch(0 0 0 / 0.01) !important;
   cursor: text !important;
 }
 
+.react-pdf__Page__textContent span::selection,
+.textLayer span::selection,
 .react-pdf__Page__textLayer span::selection {
   background: color-mix(in srgb, var(--primary), transparent 70%);
 }
-
 

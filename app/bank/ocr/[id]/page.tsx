@@ -11,7 +11,6 @@ interface PageProps {
     params: Promise<{ id: string }>
 }
 
-
 function toLocalStatement(data: BankStatementV2): LocalBankStatement {
     const normalizedStatus = (() => {
         const s = (data.status || "").toUpperCase()

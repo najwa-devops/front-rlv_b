@@ -128,7 +128,7 @@ export function BankStatementTable({ statements, onView, onDelete, onValidate, o
             return (
                 <div className="flex flex-col gap-1 w-24">
                     {getStatusBadge(statement.status)}
-                    <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                    <div className="w-full bg-muted rounded-full h-1.5 ">
                         <div
                             className="bg-sky-400 h-full transition-all duration-300"
                             style={{ width: `${progress}%` }}
@@ -145,29 +145,22 @@ export function BankStatementTable({ statements, onView, onDelete, onValidate, o
 
     return (
         <>
-            <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-xl">
-                <CardHeader className="py-4">
-                    <div className="flex items-center gap-3">
-                        <FileText className="h-6 w-6 text-emerald-600 bg-emerald-100 p-1 rounded-md" />
-                        <CardTitle className="text-xl">Relevés Bancaires</CardTitle>
-                    </div>
-                    <CardDescription className="ml-9">
-                        {statements.length} relevé{statements.length > 1 ? "s" : ""} à gérer
-                    </CardDescription>
-                </CardHeader>
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-xl w-full">
+
                 <CardContent className="p-0">
-                    <div className="overflow-x-auto">
-                        <Table>
+
+                    <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-180px)]">
+                        <Table className="min-w-full">
                             <TableHeader>
                                 <TableRow className="border-border/50 hover:bg-transparent bg-muted/30">
-                                    <TableHead className="font-bold text-foreground">Nom du relevé</TableHead>
-                                    <TableHead className="font-bold text-foreground">Période</TableHead>
-                                    <TableHead className="font-bold text-foreground">Banque</TableHead>
-                                    <TableHead className="font-bold text-foreground">RIB</TableHead>
-                                    <TableHead className="font-bold text-foreground">Total Décaissement</TableHead>
-                                    <TableHead className="font-bold text-foreground">Total Encaissement</TableHead>
-                                    <TableHead className="font-bold text-foreground">Statut</TableHead>
-                                    <TableHead className="text-right font-bold text-foreground">Action</TableHead>
+                                    <TableHead className="font-bold text-foreground text-xs sm:text-sm">Nom du relevé</TableHead>
+                                    <TableHead className="font-bold text-foreground text-xs sm:text-sm hidden md:table-cell">Période</TableHead>
+                                    <TableHead className="font-bold text-foreground text-xs sm:text-sm hidden lg:table-cell">Banque</TableHead>
+                                    <TableHead className="font-bold text-foreground text-xs sm:text-sm hidden xl:table-cell">RIB</TableHead>
+                                    <TableHead className="font-bold text-foreground text-xs sm:text-sm">Total Décaissement</TableHead>
+                                    <TableHead className="font-bold text-foreground text-xs sm:text-sm">Total Encaissement</TableHead>
+                                    <TableHead className="font-bold text-foreground text-xs sm:text-sm">Statut</TableHead>
+                                    <TableHead className="text-right font-bold text-foreground text-xs sm:text-sm">Action</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -175,58 +168,60 @@ export function BankStatementTable({ statements, onView, onDelete, onValidate, o
                                     const isLinked = linkedStatements[statement.id] || false
                                     return (
                                         <TableRow key={statement.id} className="border-border/50 hover:bg-muted/10 transition-colors">
-                                            <TableCell className="font-medium">
-                                                <div className="flex items-center gap-2">
-                                                    <FileText className="h-4 w-4 text-muted-foreground" />
-                                                    <span>{statement.originalName || statement.filename}</span>
+                                            <TableCell className="font-medium text-xs sm:text-sm">
+                                                <div className="flex items-center gap-2 min-w-[150px]">
+                                                    <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
+                                                    <span className="truncate">{statement.originalName || statement.filename}</span>
                                                 </div>
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="text-xs sm:text-sm hidden md:table-cell">
                                                 {statement.month && statement.year ? `${String(statement.month).padStart(2, '0')}/${statement.year}` : "-"}
                                             </TableCell>
-                                            <TableCell>{statement.bankName || "-"}</TableCell>
-                                            <TableCell className="font-mono text-xs">{statement.rib || "-"}</TableCell>
-                                            <TableCell className="text-red-500 font-medium whitespace-nowrap">
+                                            <TableCell className="text-xs sm:text-sm hidden lg:table-cell">{statement.bankName || "-"}</TableCell>
+                                            <TableCell className="font-mono text-[10px] sm:text-xs hidden xl:table-cell">{statement.rib || "-"}</TableCell>
+                                            <TableCell className="text-red-500 font-medium whitespace-nowrap text-xs sm:text-sm">
                                                 {statement.totalDebit ? `${statement.totalDebit.toLocaleString()} DH` : "0.00 DH"}
                                             </TableCell>
-                                            <TableCell className="text-emerald-500 font-medium whitespace-nowrap">
+                                            <TableCell className="text-emerald-500 font-medium whitespace-nowrap text-xs sm:text-sm">
                                                 {statement.totalCredit ? `${statement.totalCredit.toLocaleString()} DH` : "0.00 DH"}
                                             </TableCell>
-                                            <TableCell>{renderStatusCell(statement)}</TableCell>
+                                            <TableCell className="text-xs sm:text-sm">{renderStatusCell(statement)}</TableCell>
                                             <TableCell className="text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <div className="flex items-center gap-2 mr-2">
-                                                        {/* Checkbox 'Lier' supprimée comme demandé */}
-                                                    </div>
+                                                <div className="flex items-center justify-end gap-1 sm:gap-2">
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 text-primary hover:bg-primary/10"
+                                                        className="h-7 w-7 sm:h-8 sm:w-8 text-primary hover:bg-primary/10 shrink-0"
                                                         onClick={() => handleViewDetails(statement)}
                                                         title="Détails"
                                                     >
-                                                        <Eye className="h-4 w-4" />
+                                                        <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                                     </Button>
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                                <MoreHorizontal className="h-4 w-4" />
+                                                            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 shrink-0">
+                                                                <MoreHorizontal className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                                             </Button>
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end" className="w-32">
                                                             {(statement.status === "TREATED" || statement.status === "READY_TO_VALIDATE" || statement.status === "TRAITE" || statement.status === "PRET_A_VALIDER") && onValidate && (
-                                                                <DropdownMenuItem className="text-emerald-600 gap-2" onClick={() => onValidate(statement.id)}>
-                                                                    <CheckCircle2 className="h-4 w-4" /> Valider
+                                                                <DropdownMenuItem className="text-emerald-600 gap-2 text-xs" onClick={() => onValidate(statement.id)}>
+                                                                    <CheckCircle2 className="h-3.5 w-3.5" /> Valider
                                                                 </DropdownMenuItem>
                                                             )}
                                                             {(statement.status === "VALIDATED" || statement.status === "VALIDE") && onMarkAsAccounted && (
-                                                                <DropdownMenuItem className="text-violet-700 gap-2" onClick={() => onMarkAsAccounted(statement.id)}>
-                                                                    <CheckCircle2 className="h-4 w-4" /> Comptabiliser
+                                                                <DropdownMenuItem className="text-violet-700 gap-2 text-xs" onClick={() => onMarkAsAccounted(statement.id)}>
+                                                                    <CheckCircle2 className="h-3.5 w-3.5" /> Comptabiliser
                                                                 </DropdownMenuItem>
                                                             )}
                                                             {(statement.canReprocess || statement.status === "ERROR" || statement.status === "ERREUR") && onReprocess && (
-                                                                <DropdownMenuItem className="text-blue-600 gap-2" onClick={() => onReprocess(statement)}>
-                                                                    <RefreshCw className="h-4 w-4" /> Reprocesser
+                                                                <DropdownMenuItem className="text-blue-600 gap-2 text-xs" onClick={() => onReprocess(statement)}>
+                                                                    <RefreshCw className="h-3.5 w-3.5" /> Reprocesser
+                                                                </DropdownMenuItem>
+                                                            )}
+                                                            {(statement.status !== "COMPTABILISE" && statement.status !== "COMPTABILISÉ") && (
+                                                                <DropdownMenuItem className="text-destructive gap-2 text-xs" onClick={() => onDelete(statement.id)}>
+                                                                    <Trash2 className="h-3.5 w-3.5" /> Supprimer
                                                                 </DropdownMenuItem>
                                                             )}
                                                             <DropdownMenuItem className="text-destructive gap-2" onClick={() => setDeleteStatementId(statement.id)}>
@@ -338,8 +333,32 @@ export function BankTransactionTable({ transactions, statement, onUpdate }: Bank
                 </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                    <Table>
+                <div className="xl:hidden space-y-2 p-3 max-h-[70vh] overflow-y-auto">
+                    {Array.isArray(transactions) && transactions.map((tx) => (
+                        <div key={tx.id} className="rounded-lg border border-border/50 p-3 bg-background/60">
+                            <div className="flex items-center justify-between gap-2">
+                                <div className="text-xs text-muted-foreground">
+                                    {tx.dateOperation} • {tx.dateValeur}
+                                </div>
+                                {tx.isValid ? (
+                                    <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30">Valide</Badge>
+                                ) : tx.needsReview ? (
+                                    <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/30">À réviser</Badge>
+                                ) : (
+                                    <Badge variant="outline">OCR</Badge>
+                                )}
+                            </div>
+                            <div className="mt-2 text-sm font-mono">{tx.compte}</div>
+                            <div className="mt-1 text-sm truncate" title={tx.libelle}>{tx.libelle}</div>
+                            <div className="mt-2 flex items-center justify-between text-sm">
+                                <span className="text-red-500">{tx.debit > 0 ? `${tx.debit.toLocaleString()} DH` : "-"}</span>
+                                <span className="text-emerald-500">{tx.credit > 0 ? `${tx.credit.toLocaleString()} DH` : "-"}</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <div className="hidden xl:block overflow-x-scroll overflow-y-auto max-h-[70vh]">
+                    <Table className="min-w-[1280px]">
                         <TableHeader>
                             <TableRow className="bg-muted/30">
                                 <TableHead>Date Opération</TableHead>

@@ -2,6 +2,10 @@
 
 import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { Loader2, Building2, FileText } from "lucide-react"
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Loader2 } from "lucide-react"
 import { Card, CardDescription, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -17,8 +21,12 @@ import {
 } from "@/components/ui/alert-dialog"
 import { BankStatementTable } from "@/components/bank-statement-table"
 import { UploadBankPage } from "@/components/upload-bank-page"
+import { UploadInvoicePage } from "@/components/upload-invoice-page"
+import { InvoiceTable } from "@/components/invoice-table"
 import { api } from "@/lib/api"
 import { BankStatementV2 } from "@/lib/types"
+import { InvoiceService } from "@/src/api/services/invoice.service"
+import { InvoiceDto } from "@/src/types"
 import { toast } from "sonner"
 
 function BankListPageContent() {
@@ -33,6 +41,12 @@ function BankListPageContent() {
         const normalized = (status || "").toUpperCase()
         return normalized === "COMPTABILISE" || normalized === "COMPTABILISÉ"
     }
+
+    // Invoice tab state
+    const [invoicesLoading, setInvoicesLoading] = useState(false)
+    const [invoicesFetched, setInvoicesFetched] = useState(false)
+    const [invoices, setInvoices] = useState<InvoiceDto[]>([])
+    const [invoiceStatusFilter, setInvoiceStatusFilter] = useState<"all" | "pending" | "ready" | "validated" | "error">("all")
 
     const loadData = async () => {
         try {
@@ -212,15 +226,152 @@ function BankListPageContent() {
         }
     }
 
+    // ── Invoice tab handlers ──────────────────────────────────────────────────
+
+    const loadInvoices = async () => {
+        setInvoicesLoading(true)
+        try {
+            const data = await InvoiceService.getAll()
+            setInvoices(Array.isArray(data) ? data : [])
+            setInvoicesFetched(true)
+        } catch {
+            toast.error("Impossible de charger les factures")
+        } finally {
+            setInvoicesLoading(false)
+        }
+    }
+
+    const handleTabChange = (value: string) => {
+        if (value === "invoices" && !invoicesFetched) {
+            loadInvoices()
+        }
+    }
+
+    const handleInvoiceUpload = async (files: File[]) => {
+        try {
+            if (files.length === 1) {
+                await InvoiceService.upload(files[0])
+            } else {
+                await InvoiceService.uploadBatch(files)
+            }
+            toast.success(`${files.length} facture${files.length > 1 ? "s" : ""} importée${files.length > 1 ? "s" : ""}`)
+            await loadInvoices()
+        } catch {
+            toast.error("Erreur lors de l'import")
+            throw new Error("upload failed")
+        }
+    }
+
+    const handleInvoiceView = (invoice: InvoiceDto) => {
+        router.push(`/invoices/${invoice.id}`)
+    }
+
+    const handleInvoiceDelete = async (id: number) => {
+        try {
+            await InvoiceService.delete(id)
+            setInvoices((prev) => prev.filter((inv) => inv.id !== id))
+            toast.success("Facture supprimée")
+        } catch {
+            toast.error("Erreur lors de la suppression")
+        }
+    }
+
+    const handleInvoiceProcess = async (id: number) => {
+        try {
+            const updated = await InvoiceService.process(id)
+            setInvoices((prev) => prev.map((inv) => (inv.id === id ? { ...inv, ...updated } : inv)))
+            toast.success("Retraitement lancé")
+        } catch {
+            toast.error("Erreur lors du retraitement")
+        }
+    }
+
+    const handleInvoiceValidate = async (id: number) => {
+        try {
+            const updated = await InvoiceService.validate(id)
+            setInvoices((prev) => prev.map((inv) => (inv.id === id ? { ...inv, ...updated } : inv)))
+            toast.success("Facture validée")
+        } catch {
+            toast.error("Erreur lors de la validation")
+        }
+    }
+
+    const handleInvoiceComptabiliser = async (id: number) => {
+        try {
+            await InvoiceService.comptabiliser(id)
+            setInvoices((prev) => prev.map((inv) => (inv.id === id ? { ...inv, accounted: true } : inv)))
+            toast.success("Facture comptabilisée")
+        } catch (err: any) {
+            const details = err?.response?.data?.details
+            const msg = details ? details.join(", ") : (err?.response?.data?.error || "Erreur lors de la comptabilisation")
+            toast.error(msg)
+        }
+    }
+
+    const handleInvoiceDeleteAll = async () => {
+        if (!confirm("Supprimer toutes les factures ?")) return
+        try {
+            await InvoiceService.bulkDelete(invoices.map((i) => i.id))
+            setInvoices([])
+            toast.success("Toutes les factures ont été supprimées")
+        } catch {
+            toast.error("Erreur lors de la suppression globale")
+        }
+    }
+
+    const filteredInvoices = invoices.filter((inv) => {
+        const s = (inv.status || "").toUpperCase()
+        switch (invoiceStatusFilter) {
+            case "pending":    return ["PENDING", "PROCESSING"].includes(s)
+            case "ready":      return s === "READY_TO_VALIDATE"
+            case "validated":  return s === "VALIDATED"
+            case "error":      return ["ERROR", "REJECTED", "TO_VERIFY", "VERIFY"].includes(s)
+            default:           return true
+        }
+    })
+
+    const invoiceCounts = {
+        all:       invoices.length,
+        pending:   invoices.filter((i) => ["PENDING", "PROCESSING"].includes((i.status || "").toUpperCase())).length,
+        ready:     invoices.filter((i) => (i.status || "").toUpperCase() === "READY_TO_VALIDATE").length,
+        validated: invoices.filter((i) => (i.status || "").toUpperCase() === "VALIDATED").length,
+        error:     invoices.filter((i) => ["ERROR", "REJECTED", "TO_VERIFY", "VERIFY"].includes((i.status || "").toUpperCase())).length,
+    }
+
     if (loading) {
         return (
-            <div className="flex h-96 items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="flex h-48 sm:h-96 items-center justify-center">
+                <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-primary" />
             </div>
         )
     }
 
     return (
+        <div className="mx-auto space-y-3 w-full">
+
+
+                {/* ── Bank tab ── */}
+                    <UploadBankPage onUpload={handleUpload} onViewBankStatement={() => {}} />
+
+
+
+
+
+                    <BankStatementTable
+                        statements={filteredStatements}
+                        onView={handleView}
+                        onDelete={handleDelete}
+                        onValidate={handleValidate}
+                        onMarkAsAccounted={handleMarkAsAccounted}
+                        onReprocess={handleReprocess}
+                        onUpdateStatement={(updated) => {
+                            setStatements((prev) =>
+                                prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s))
+                            )
+                        }}
+                    />
+
+
         <div className="container mx-auto py-6 space-y-6">
             <UploadBankPage onUpload={handleUpload} onViewBankStatement={() => {}} />
 
@@ -289,7 +440,7 @@ function BankListPageContent() {
 
 export default function BankListPage() {
     return (
-        <Suspense fallback={<div className="flex h-96 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+        <Suspense fallback={<div className="flex h-48 sm:h-96 items-center justify-center"><Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-primary" /></div>}>
             <BankListPageContent />
         </Suspense>
     )
