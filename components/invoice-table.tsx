@@ -696,14 +696,16 @@ export function InvoiceTable({
                                   Valider
                                 </DropdownMenuItem>
                               )}
-                              <DropdownMenuItem
-                                onClick={() => handleDelete(invoice.id)}
-                                className="gap-2 cursor-pointer text-destructive focus:text-destructive"
-                                disabled={isDeleting}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                                Supprimer
-                              </DropdownMenuItem>
+                              {!invoice.accounted && (
+                                <DropdownMenuItem
+                                  onClick={() => handleDelete(invoice.id)}
+                                  className="gap-2 cursor-pointer text-destructive focus:text-destructive"
+                                  disabled={isDeleting}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  Supprimer
+                                </DropdownMenuItem>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>

@@ -108,11 +108,27 @@ export async function parseApiError(response: Response): Promise<string> {
 // ACCOUNTING: ACCOUNTS
 // ============================================
 
-export async function getAccounts(): Promise<Account[]> {
-  const response = await apiFetch(`${API_BASE_URL}/api/accounting/accounts`)
+export async function getAccounts(includeBankJournalOptions: boolean = false): Promise<Account[]> {
+  const endpoint = includeBankJournalOptions
+    ? `${API_BASE_URL}/api/v2/accounting/accounts/options`
+    : `${API_BASE_URL}/api/accounting/accounts`
+  const response = await apiFetch(endpoint)
   if (!response.ok) throw new Error(await parseApiError(response))
   const data = await response.json()
-  return data.accounts || []
+  const accounts = data.accounts || data.comptes || []
+
+  if (!includeBankJournalOptions) {
+    return accounts
+  }
+
+  return accounts.map((account: any, index: number) => ({
+    id: Number(index + 1),
+    code: account.code,
+    libelle: account.libelle,
+    codejrn: account.codejrn || "",
+    classe: 0,
+    active: true,
+  }))
 }
 
 export async function getAccountById(id: number): Promise<Account> {

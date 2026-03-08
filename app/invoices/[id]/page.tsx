@@ -381,11 +381,17 @@ export default function InvoiceDetailPage() {
       return;
     }
 
-    // Get text layer - try multiple selectors for react-pdf v9
-    const textLayer = viewerOverlayRef.current.querySelector(
-      ".react-pdf__Page__textLayer, [data-page-number]",
-    );
-    
+    // Restrict extraction to the actual text layer. Container nodes can expose
+    // the full page text via textContent, which causes the whole invoice to be
+    // returned for a small selection.
+    const textLayer =
+      viewerOverlayRef.current.querySelector(
+        ".react-pdf__Page__textContent, .textLayer, .react-pdf__Page__textLayer",
+      ) ??
+      viewerOverlayRef.current.querySelector(
+        "[data-page-number] .react-pdf__Page__textContent, [data-page-number] .textLayer, [data-page-number] .react-pdf__Page__textLayer",
+      );
+
     if (!textLayer) {
       toast.error(
         "Couche texte non disponible - assurez-vous que le PDF est un PDF texte (non scanne)",
@@ -409,31 +415,51 @@ export default function InvoiceDetailPage() {
         overlayRect.top + (selectionRect.y + selectionRect.height) * scale,
     };
 
-    // Get all text elements
-    const spans = Array.from(
-      textLayer.querySelectorAll("span, div, [role='presentation']"),
-    ) as HTMLElement[];
+    // Only read leaf text spans. Parent containers often contain the full page
+    // text concatenated in textContent.
+    const spans = Array.from(textLayer.querySelectorAll("span"))
+      .filter((span) => span.childElementCount === 0) as HTMLElement[];
 
-    const intersects = (
+    const tolerance = 2;
+
+    const containsSpanCenter = (
       a: DOMRect,
       b: { left: number; top: number; right: number; bottom: number },
-    ) =>
-      a.right >= b.left &&
-      a.left <= b.right &&
-      a.bottom >= b.top &&
-      a.top <= b.bottom;
+    ) => {
+      const centerX = a.left + a.width / 2;
+      const centerY = a.top + a.height / 2;
 
-    // Collect text from intersecting spans
+      return (
+        centerX >= b.left - tolerance &&
+        centerX <= b.right + tolerance &&
+        centerY >= b.top - tolerance &&
+        centerY <= b.bottom + tolerance
+      );
+    };
+
+    // Keep only spans whose visual center is inside the drawn box.
     const text = spans
       .filter((span) => {
         const spanRect = span.getBoundingClientRect();
-        // Check if span is visible and has content
         const hasContent =
           span.textContent && span.textContent.trim().length > 0;
         const isVisible = spanRect.width > 0 && spanRect.height > 0;
         return (
-          hasContent && isVisible && intersects(spanRect, selectedClientRect)
+          hasContent &&
+          isVisible &&
+          containsSpanCenter(spanRect, selectedClientRect)
         );
+      })
+      .sort((a, b) => {
+        const aRect = a.getBoundingClientRect();
+        const bRect = b.getBoundingClientRect();
+        const sameLine = Math.abs(aRect.top - bRect.top) < 4;
+
+        if (!sameLine) {
+          return aRect.top - bRect.top;
+        }
+
+        return aRect.left - bRect.left;
       })
       .map((span) => span.textContent || "")
       .join(" ")
@@ -733,7 +759,7 @@ export default function InvoiceDetailPage() {
                   ref={viewerOverlayRef}
                   className={
                     activePickerFieldId && isPdf
-                      ? "relative inline-block origin-top-left select-none [&_.react-pdf__Page__textLayer]:pointer-events-none [&_.react-pdf__Page__textLayer]:select-none"
+                      ? "relative inline-block origin-top-left select-none [&_.react-pdf__Page__textContent]:pointer-events-none [&_.react-pdf__Page__textContent]:select-none [&_.textLayer]:pointer-events-none [&_.textLayer]:select-none"
                       : "relative inline-block origin-top-left"
                   }
                   style={{ transform: `scale(${zoom / 100})` }}
@@ -764,8 +790,8 @@ export default function InvoiceDetailPage() {
                           pageNumber={pageNumber}
                           width={
                             typeof window !== "undefined"
-                              ? window.innerWidth * 0.9
-                              : 850
+                              ? window.innerWidth * 0.45
+                              : 425
                           }
                           renderTextLayer={true}
                           renderAnnotationLayer={true}

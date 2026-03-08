@@ -35,6 +35,16 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                     
                     <span className="font-bold text-sm sm:text-base text-foreground tracking-tight">Evoleo Scan</span>
                     <div className="flex items-center gap-1 sm:gap-2 ml-2 sm:ml-3 pl-2 sm:pl-3 border-l border-border/50">
+                    <Link
+                            href="/invoices/list"
+                            className={`text-[10px] sm:text-xs px-2 py-1 rounded-md transition-colors whitespace-nowrap ${
+                                pathname.startsWith("/invoices")
+                                    ? "bg-primary/15 text-primary"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                            }`}
+                        >
+                            Facture
+                        </Link>
                         <Link
                             href="/bank/list"
                             className={`text-[10px] sm:text-xs px-2 py-1 rounded-md transition-colors whitespace-nowrap ${
@@ -45,16 +55,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                         >
                             Relevés Bancaires
                         </Link>
-                        <Link
-                            href="/invoices/list"
-                            className={`text-[10px] sm:text-xs px-2 py-1 rounded-md transition-colors whitespace-nowrap ${
-                                pathname.startsWith("/invoices")
-                                    ? "bg-primary/15 text-primary"
-                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-                            }`}
-                        >
-                            Facture
-                        </Link>
+                        
                     </div>
                 </div>
 

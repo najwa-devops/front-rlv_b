@@ -8,7 +8,7 @@ import { Upload, FileText, X, Loader2, CheckCircle, AlertCircle, CloudUpload, Sp
 import type { BankStatementV2 } from "@/lib/types"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-import { api, getAccountsByClasse } from "@/lib/api"
+import { api } from "@/lib/api"
 import { type BankOption, type Account } from "@/lib/types"
 
 interface FileItem {
@@ -35,6 +35,7 @@ export function UploadBankPage({ onUpload, onViewBankStatement, isDemoMode }: Up
     const [selectedCompte, setSelectedCompte] = useState<string>("")
     const [supportedBanks, setSupportedBanks] = useState<BankOption[]>([])
     const [comptes5141, setComptes5141] = useState<Account[]>([])
+    const selectedCompteAccount = comptes5141.find((compte) => compte.code === selectedCompte) || null
 
     useEffect(() => {
         const fetchOptions = async () => {
@@ -55,7 +56,7 @@ export function UploadBankPage({ onUpload, onViewBankStatement, isDemoMode }: Up
     useEffect(() => {
         const fetchComptes5141 = async () => {
             try {
-                const accounts = await getAccountsByClasse(5)
+                const accounts = await api.getAccounts(true)
                 const filtered = accounts.filter(a => a.code.startsWith("5141"))
                 setComptes5141(filtered)
                 if (filtered.length > 0) {
@@ -180,7 +181,7 @@ export function UploadBankPage({ onUpload, onViewBankStatement, isDemoMode }: Up
 
                 <CardContent className="space-y-3">
                     {/* Bank Selection */}
-                    <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 bg-accent/30 p-3 sm:p-4 rounded-xl border border-border/50">
+                    <div className="flex flex-col lg:flex-row items-center gap-3 sm:gap-4 bg-accent/30 p-3 sm:p-4 rounded-xl border border-border/50">
                         <div className="text-xs sm:text-sm w-full">
                                 <p className="font-semibold">Structure de la banque</p>
                                 <Select value={selectedBank} onValueChange={setSelectedBank}>
@@ -206,11 +207,19 @@ export function UploadBankPage({ onUpload, onViewBankStatement, isDemoMode }: Up
         <SelectContent>
             {comptes5141.map(compte => (
                 <SelectItem key={compte.code} value={compte.code}>
-                    {compte.code} - {compte.libelle}
+                    {compte.code} - {compte.libelle}{compte.codejrn ? ` - ${compte.codejrn}` : ""}
                 </SelectItem>
             ))}
         </SelectContent>
     </Select>
+</div>
+<div className="text-xs sm:text-sm w-full lg:max-w-[220px]">
+    <p className="font-semibold">Code journal</p>
+    <div className="flex min-h-10 items-center rounded-md border bg-background px-3 py-2">
+        <span className="font-mono text-xs sm:text-sm">
+            {selectedCompteAccount?.codejrn || "-"}
+        </span>
+    </div>
 </div>
                     </div>
 

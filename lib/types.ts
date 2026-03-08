@@ -18,6 +18,7 @@ export interface Account {
   id: number;
   code: string;
   libelle: string;
+  codejrn?: string;
   classe: number;
   active: boolean;
   classeName?: string;
@@ -118,6 +119,7 @@ export interface BankTransactionPreview {
   debit: number
   credit: number
   compte?: string
+  codejrn?: string
   isLinked?: boolean
   transactionIndex?: number
   sens?: "DEBIT" | "CREDIT"
@@ -182,6 +184,7 @@ export interface BankTransactionV2 {
   sens: "DEBIT" | "CREDIT"
   compte: string
   compteLibelle?: string | null
+  codejrn?: string | null
   isLinked: boolean
   categorie: string
   role: string

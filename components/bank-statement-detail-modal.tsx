@@ -148,6 +148,10 @@ function resolveDisplayCompte(value?: string | null): string {
     return compte === "" ? DEFAULT_COMPTE_CODE : compte
 }
 
+function resolveDisplayCodejrn(value?: string | null): string {
+    return (value || "").trim()
+}
+
 export function BankStatementDetailModal({
     open,
     onOpenChange,
@@ -408,6 +412,7 @@ export function BankStatementDetailModal({
             return
         }
         const targetIndex = Math.max(1, Math.floor(newTransaction.transactionIndex || 1))
+        const selectedAccount = accounts.find((account) => account.code === newTransaction.compte) || null
         const localTx: BankTransactionV2 = {
             id: -Date.now(),
             statementId: localStatement.id,
@@ -419,6 +424,8 @@ export function BankStatementDetailModal({
             credit: Number(newTransaction.credit || 0),
             sens: Number(newTransaction.debit || 0) > 0 ? "DEBIT" : "CREDIT",
             compte: newTransaction.compte,
+            compteLibelle: selectedAccount?.libelle || null,
+            codejrn: selectedAccount?.codejrn || null,
             isLinked: false,
             categorie: "MANUAL",
             role: "MANUAL",
@@ -458,7 +465,7 @@ export function BankStatementDetailModal({
         })
     }, [editableTransactions, transactions])
 
-    const handleSaveAll = async () => {
+    const handleSaveAll = async (): Promise<boolean> => {
         const toPersist = sortByIndex(editableTransactions)
 
         // Propagation locale avant sauvegarde: même libellé -> même code choisi.
@@ -528,9 +535,11 @@ export function BankStatementDetailModal({
                 await loadFullData(localStatement.id, true)
             }
             toast.success("Modifications enregistrées")
+            return true
         } catch (error) {
             console.error("Error saving transactions:", error)
             toast.error("Erreur lors de l'enregistrement")
+            return false
         } finally {
             setSaving(false)
         }
@@ -541,6 +550,13 @@ export function BankStatementDetailModal({
         setAccountingLoading(true)
         setAccountingConfirmed(false)
         try {
+            if (hasChanges) {
+                const saved = await handleSaveAll()
+                if (!saved) {
+                    setSimulationResult(null)
+                    return
+                }
+            }
             const result = await api.simulateComptabilisation(localStatement.id)
             setSimulationResult(result)
             toast.success("Simulation de comptabilisation prête")
@@ -692,6 +708,7 @@ export function BankStatementDetailModal({
                         </div>
                     )}
 
+                    <div className="sticky top-0 z-10 bg-muted/10">
                     {!isAccounted && (
                         <div className="shrink-0">
                             <div className="flex items-center justify-between mb-2">
@@ -750,6 +767,11 @@ export function BankStatementDetailModal({
                                                                 {selectedNewTransactionAccount.libelle}
                                                             </div>
                                                         ) : null}
+                                                        {selectedNewTransactionAccount?.codejrn ? (
+                                                            <div className="text-[10px] font-mono text-muted-foreground/80 leading-tight mt-0.5">
+                                                                Journal: {selectedNewTransactionAccount.codejrn}
+                                                            </div>
+                                                        ) : null}
                                                     </div>
                                                 </PopoverTrigger>
                                                 <PopoverContent className="w-[320px] p-0" align="start">
@@ -782,6 +804,11 @@ export function BankStatementDetailModal({
                                                                         <span className="text-[9px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">
                                                                             {account.code}
                                                                         </span>
+                                                                        {account.codejrn ? (
+                                                                            <span className="text-[9px] text-muted-foreground font-mono">
+                                                                                Journal: {account.codejrn}
+                                                                            </span>
+                                                                        ) : null}
                                                                     </CommandItem>
                                                                 ))}
                                                             </CommandGroup>
@@ -826,6 +853,7 @@ export function BankStatementDetailModal({
                             )}
                         </div>
                     )}
+                    </div>
 
                     {loading ? (
                         <div className="h-full flex items-center justify-center">
@@ -861,9 +889,10 @@ export function BankStatementDetailModal({
                                     </div>
                                 </div>
                             )}
-                            <div className="min-h-[220px] overflow-y-auto">
-                                
-                                <div className=" xl:block overflow-x-scroll">
+                            <div className="overflow-x-auto bg-card">
+
+                                <div className="overflow-x-auto">
+                                <div className="w-max">
                                 <Table>
                                     <TableHeader>
                                         <TableRow className="bg-muted/50 hover:bg-muted/50">
@@ -880,6 +909,7 @@ export function BankStatementDetailModal({
                                         {sortByIndex(editableTransactions).map((tx) => {
                                             const displayCompte = resolveDisplayCompte(tx.compte)
                                             const hasCompteLibelle = (tx.compteLibelle || "").trim() !== ""
+                                            const displayCodejrn = resolveDisplayCodejrn(tx.codejrn)
                                             const compteIsDefault = isDefaultCompte(displayCompte)
                                             const isCommissionLine = isCommissionVisualLine(tx.libelle)
                                             return (
@@ -952,6 +982,11 @@ export function BankStatementDetailModal({
                                                                         {tx.compteLibelle}
                                                                     </span>
                                                                 ) : null}
+                                                                {displayCodejrn ? (
+                                                                    <span className={cn("mt-0.5 text-[10px] leading-tight font-mono", compteIsDefault ? "text-orange-900/80" : "text-muted-foreground/90")}>
+                                                                        Journal: {displayCodejrn}
+                                                                    </span>
+                                                                ) : null}
                                                             </div>
                                                         </PopoverTrigger>
                                                         <PopoverContent className="w-[300px] p-0" align="start">
@@ -979,7 +1014,7 @@ export function BankStatementDetailModal({
                                                                                                     normalizeLibelle(row.libelle) === targetLibelle &&
                                                                                                     !isSelectedCompte(row.compte)
                                                                                                 )
-                                                                                                    ? { ...row, compte: account.code, compteLibelle: account.libelle, isLinked: true }
+                                                                                                    ? { ...row, compte: account.code, compteLibelle: account.libelle, codejrn: account.codejrn || null, isLinked: true }
                                                                                                     : row
                                                                                             )
                                                                                         )
@@ -997,6 +1032,11 @@ export function BankStatementDetailModal({
                                                                                     <span className="text-[9px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">
                                                                                         {account.code}
                                                                                     </span>
+                                                                                    {account.codejrn ? (
+                                                                                        <span className="text-[9px] text-muted-foreground font-mono">
+                                                                                            Journal: {account.codejrn}
+                                                                                        </span>
+                                                                                    ) : null}
                                                                                 </CommandItem>
                                                                             )
                                                                         })}
@@ -1027,6 +1067,7 @@ export function BankStatementDetailModal({
                                         )}
                                     </TableBody>
                                 </Table>
+                                </div>
                                 </div>
                             </div>
                         </div>
@@ -1163,6 +1204,5 @@ export function BankStatementDetailModal({
         </Dialog>
     )
 }
-
 
 

@@ -202,9 +202,11 @@ export function BankStatementTable({ statements, onView, onDelete, onValidate, o
                                                                     <RefreshCw className="h-3.5 w-3.5" /> Reprocesser
                                                                 </DropdownMenuItem>
                                                             )}
-                                                            <DropdownMenuItem className="text-destructive gap-2 text-xs" onClick={() => onDelete(statement.id)}>
-                                                                <Trash2 className="h-3.5 w-3.5" /> Supprimer
-                                                            </DropdownMenuItem>
+                                                            {(statement.status !== "COMPTABILISE" && statement.status !== "COMPTABILISÉ") && (
+                                                                <DropdownMenuItem className="text-destructive gap-2 text-xs" onClick={() => onDelete(statement.id)}>
+                                                                    <Trash2 className="h-3.5 w-3.5" /> Supprimer
+                                                                </DropdownMenuItem>
+                                                            )}
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
                                                 </div>

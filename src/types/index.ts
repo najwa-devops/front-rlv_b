@@ -113,6 +113,7 @@ export interface Account {
     id: number;
     code: string;
     libelle: string;
+    codejrn?: string;
     classe: number;
     active: boolean;
     classeName?: string;

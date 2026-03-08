@@ -7,12 +7,12 @@ export default function Home() {
   const router = useRouter()
 
   useEffect(() => {
-    router.replace("/bank/list")
+    router.replace("/invoices/list")
   }, [router])
 
   return (
     <div className="flex w-screen h-screen">
-      <div className="animate-pulse text-muted-foreground">Redirection vers la liste des relevés...</div>
+      <div className="animate-pulse text-muted-foreground">Redirection vers la liste des factures...</div>
     </div>
   )
 }
