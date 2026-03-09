@@ -681,16 +681,6 @@ export default function CentreMonetiquePage() {
             </Select>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={() => setFiles([])} disabled={uploading || files.length === 0}>
-              Annuler
-            </Button>
-            <Button onClick={handleUpload} disabled={files.length === 0 || uploading}>
-              {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-              Uploader
-            </Button>
-          </div>
-
           <div
             className={`relative flex min-h-[120px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-all ${
               isDragOver
@@ -732,6 +722,18 @@ export default function CentreMonetiquePage() {
               )}
             </div>
           </div>
+
+          {files.length > 0 && (
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-border/50">
+              <Button variant="outline" onClick={() => setFiles([])} disabled={uploading}>
+                Annuler
+              </Button>
+              <Button onClick={handleUpload} disabled={uploading}>
+                {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                Uploader ({files.length})
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
