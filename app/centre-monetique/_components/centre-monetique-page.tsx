@@ -17,6 +17,9 @@ import {
   Save,
   Pencil,
   X,
+  Link2,
+  CheckCircle2,
+  CreditCard,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -47,6 +50,7 @@ import {
   CentreMonetiqueBatchDetail,
   CentreMonetiqueBatchSummary,
   CentreMonetiqueExtractionRow,
+  RapprochementResult,
 } from "@/lib/centre-monetique/types"
 
 export default function CentreMonetiquePage() {
@@ -76,6 +80,17 @@ export default function CentreMonetiquePage() {
   const [deleteBatchId, setDeleteBatchId] = useState<number | null>(null)
   const [deleteAllOpen, setDeleteAllOpen] = useState(false)
 
+  // RIB saisi lors de l'upload
+  const [uploadRib, setUploadRib] = useState("")
+  // RIB en cours d'édition pour un batch existant
+  const [editRibBatchId, setEditRibBatchId] = useState<number | null>(null)
+  const [editRibValue, setEditRibValue] = useState("")
+  const [savingRib, setSavingRib] = useState(false)
+  // Rapprochement
+  const [rapprochementLoading, setRapprochementLoading] = useState(false)
+  const [rapprochementResult, setRapprochementResult] = useState<RapprochementResult | null>(null)
+  const [rapprochementOpen, setRapprochementOpen] = useState(false)
+
   const acceptedExtensions = ".pdf,.png,.jpg,.jpeg,.webp,.bmp,.tif,.tiff"
 
   const loadHistory = async () => {
@@ -91,22 +106,7 @@ export default function CentreMonetiquePage() {
   }
 
   useEffect(() => {
-    const resetOnRefresh = async () => {
-      setLoading(true)
-      try {
-        const existing = await centreApi.getCentreMonetiqueBatches(200)
-        if (Array.isArray(existing) && existing.length > 0) {
-          await Promise.all(existing.map((batch) => centreApi.deleteCentreMonetiqueBatch(batch.id)))
-        }
-      } catch (error) {
-        console.error("Reset Centre Monétique au refresh échoué", error)
-      } finally {
-        setSelected(null)
-        await loadHistory()
-      }
-    }
-
-    resetOnRefresh()
+    loadHistory()
   }, [])
 
   useEffect(() => {
@@ -332,7 +332,7 @@ export default function CentreMonetiquePage() {
       const section = (row.section || "").trim()
       const upperSection = section.toUpperCase()
 
-      if (upperSection === "REMISE") {
+      if (upperSection === "REMISE" || (upperSection.startsWith("REMISE ") && upperSection !== "REMISE ACHAT")) {
         if (hasAnyBlockTotal()) {
           applyCurrentTotals()
           resetBlock()
@@ -435,7 +435,7 @@ export default function CentreMonetiquePage() {
     try {
       let lastBatch: CentreMonetiqueBatchDetail | null = null
       for (const f of files) {
-        const response = await centreApi.uploadCentreMonetique(f, undefined, selectedStructure)
+        const response = await centreApi.uploadCentreMonetique(f, undefined, selectedStructure, uploadRib || undefined)
         lastBatch = response.batch
       }
       if (lastBatch) {
@@ -513,6 +513,37 @@ export default function CentreMonetiquePage() {
       setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000)
     } catch (error: any) {
       toast.error(error?.message || "Impossible d'ouvrir le fichier")
+    }
+  }
+
+  const handleSaveRib = async (batchId: number) => {
+    setSavingRib(true)
+    try {
+      const updated = await centreApi.updateCentreMonetiqueBatchRib(batchId, editRibValue)
+      setBatches((prev) => prev.map((b) => b.id === batchId ? { ...b, rib: updated.rib } : b))
+      if (selected?.id === batchId) setSelected((prev) => prev ? { ...prev, rib: updated.rib } : prev)
+      setEditRibBatchId(null)
+      setEditRibValue("")
+      toast.success("RIB mis à jour")
+    } catch (error: any) {
+      toast.error(error?.message || "Erreur mise à jour RIB")
+    } finally {
+      setSavingRib(false)
+    }
+  }
+
+  const handleRapprochement = async (batchId: number) => {
+    setRapprochementLoading(true)
+    setRapprochementResult(null)
+    setRapprochementOpen(true)
+    try {
+      const result = await centreApi.getRapprochement(batchId)
+      setRapprochementResult(result)
+    } catch (error: any) {
+      toast.error(error?.message || "Erreur rapprochement")
+      setRapprochementOpen(false)
+    } finally {
+      setRapprochementLoading(false)
     }
   }
 
@@ -682,6 +713,26 @@ export default function CentreMonetiquePage() {
             </Select>
           </div>
 
+          {/* Champ RIB pour la liaison avec les relevés bancaires */}
+          <div className="flex flex-col sm:flex-row items-center gap-4 bg-sky-50 p-4 rounded-xl border border-sky-200">
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <CreditCard className="h-5 w-5 text-primary" />
+              </div>
+              <div className="text-sm">
+                <p className="font-semibold">RIB du compte bancaire <span className="font-normal text-muted-foreground">(optionnel)</span></p>
+                <p className="text-muted-foreground text-xs">Extrait automatiquement du PDF — saisir ici pour forcer une valeur</p>
+              </div>
+            </div>
+            <Input
+              className="w-full sm:w-[320px] bg-background font-mono"
+              placeholder="Ex : 011810000012345678901234"
+              maxLength={30}
+              value={uploadRib}
+              onChange={(e) => setUploadRib(e.target.value.replace(/\D/g, ""))}
+            />
+          </div>
+
           <div
             className={`relative flex min-h-[120px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-all ${
               isDragOver
@@ -782,6 +833,7 @@ export default function CentreMonetiquePage() {
               <thead>
                 <tr className="border-b bg-muted/30">
                   <th className="p-3 text-left">Fichier</th>
+                  <th className="p-3 text-left">RIB</th>
                   <th className="p-3 text-left">Structure</th>
                   <th className="p-3 text-left">Période</th>
                   <th className="p-3 text-left">Transactions</th>
@@ -793,6 +845,47 @@ export default function CentreMonetiquePage() {
                 {paginatedBatches.map((batch) => (
                   <tr key={batch.id} className="border-b hover:bg-muted/10">
                     <td className="p-3 max-w-[300px] truncate" title={batch.originalName}>{batch.originalName}</td>
+                    <td className="p-3">
+                      {editRibBatchId === batch.id ? (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            className="h-7 w-[200px] font-mono text-xs"
+                            value={editRibValue}
+                            maxLength={30}
+                            onChange={(e) => setEditRibValue(e.target.value.replace(/\D/g, ""))}
+                            placeholder="24 chiffres"
+                            autoFocus
+                          />
+                          <Button size="icon" variant="ghost" className="h-7 w-7" disabled={savingRib}
+                            onClick={() => handleSaveRib(batch.id)}>
+                            {savingRib ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7"
+                            onClick={() => { setEditRibBatchId(null); setEditRibValue("") }}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : batch.rib ? (
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1 rounded-md bg-sky-50 border border-sky-200 px-2 py-0.5">
+                            <CreditCard className="h-3 w-3 text-sky-500 shrink-0" />
+                            <span className="font-mono text-xs text-sky-800">{batch.rib}</span>
+                          </div>
+                          <Button size="icon" variant="ghost" className="h-6 w-6 opacity-50 hover:opacity-100"
+                            onClick={() => { setEditRibBatchId(batch.id); setEditRibValue(batch.rib || "") }}>
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs italic text-muted-foreground/50">Non extrait</span>
+                          <Button size="icon" variant="ghost" className="h-6 w-6 opacity-50 hover:opacity-100"
+                            onClick={() => { setEditRibBatchId(batch.id); setEditRibValue("") }}>
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
+                    </td>
                     <td className="p-3">{batch.structure || "-"}</td>
                     <td className="p-3">{batch.statementPeriod || "-"}</td>
                     <td className="p-3">{batch.totalTransactions || String(batch.transactionCount || 0)}</td>
@@ -802,6 +895,13 @@ export default function CentreMonetiquePage() {
                         <Button size="icon" variant="outline" onClick={() => openDetail(batch.id)} title="Voir détail">
                           <Eye className="h-4 w-4" />
                         </Button>
+                        {batch.rib && (
+                          <Button size="icon" variant="outline" onClick={() => handleRapprochement(batch.id)}
+                            title="Voir le rapprochement avec les relevés bancaires"
+                            className="text-sky-600 border-sky-300 hover:bg-sky-50">
+                            <Link2 className="h-4 w-4" />
+                          </Button>
+                        )}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button size="icon" variant="ghost" title="Autres actions">
@@ -1213,6 +1313,167 @@ export default function CentreMonetiquePage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog Rapprochement */}
+      <Dialog open={rapprochementOpen} onOpenChange={setRapprochementOpen}>
+        <DialogContent className="max-w-[92vw] sm:max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0">
+          {/* En-tête */}
+          <div className="px-6 pt-6 pb-4 border-b bg-gradient-to-r from-sky-50 to-white">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 shrink-0">
+                <Link2 className="h-5 w-5 text-sky-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-semibold text-slate-900">Rapprochement avec les relevés bancaires</h2>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Correspondances entre les transactions Centre Monétique et les relevés bancaires enregistrés
+                </p>
+                {rapprochementResult?.batchRib && (
+                  <div className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-sky-100 border border-sky-200 px-2.5 py-1">
+                    <CreditCard className="h-3.5 w-3.5 text-sky-600" />
+                    <span className="font-mono text-xs font-medium text-sky-800">RIB : {rapprochementResult.batchRib}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-6">
+            {rapprochementLoading ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <Loader2 className="h-10 w-10 animate-spin text-sky-500" />
+                <p className="text-sm text-muted-foreground">Recherche des correspondances en cours…</p>
+              </div>
+            ) : rapprochementResult ? (
+              <div className="space-y-5">
+                {/* Résumé compact */}
+                <div className="flex flex-wrap items-center gap-4 p-3 bg-slate-50 rounded-lg border text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Total transactions CM : </span>
+                    <span className="font-bold text-slate-800">{rapprochementResult.totalCmTransactions}</span>
+                  </div>
+                  <div className="w-px h-4 bg-border" />
+                  <div>
+                    <span className="text-muted-foreground">Transactions CM détaillées : </span>
+                    <Badge className={rapprochementResult.matchedCount > 0
+                      ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/30"
+                      : "bg-slate-100 text-slate-600"}>
+                      {rapprochementResult.matchedCount}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Tableau des correspondances */}
+                {rapprochementResult.matchedCount === 0 ? (
+                  <div className="flex flex-col items-center py-12 text-muted-foreground gap-3 rounded-xl border border-dashed bg-muted/20">
+                    <AlertCircle className="h-12 w-12 opacity-30" />
+                    <div className="text-center space-y-1">
+                      <p className="text-sm font-medium">Aucune correspondance trouvée</p>
+                      <p className="text-xs max-w-sm">
+                        Vérifiez que le RIB du batch correspond exactement au RIB d'un relevé bancaire enregistré,
+                        et que les dates d'opération coïncident.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border overflow-hidden">
+                    <div className="px-4 py-2.5 bg-emerald-50 border-b border-emerald-100 flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      <span className="text-sm font-medium text-emerald-800">
+                        {rapprochementResult.matchedCount > 0
+                          ? `${rapprochementResult.matchedCount} transaction${rapprochementResult.matchedCount > 1 ? "s" : ""} CM avec correspondance bancaire`
+                          : `${rapprochementResult.totalCmTransactions} transaction${rapprochementResult.totalCmTransactions > 1 ? "s" : ""} CM (aucune correspondance bancaire)`}
+                      </span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-muted/20">
+                            <th className="p-2.5 text-left text-xs font-semibold text-slate-600 border-r border-slate-200" colSpan={3}>Centre Monétique</th>
+                            <th className="p-2.5 text-left text-xs font-semibold text-slate-600 border-r border-slate-200" colSpan={3}>Détail transaction CM</th>
+                            <th className="p-2.5 text-left text-xs font-semibold text-slate-600" colSpan={3}>Relevé bancaire correspondant</th>
+                          </tr>
+                          <tr className="border-b bg-muted/30">
+                            <th className="p-2.5 text-left text-xs font-semibold text-slate-600">Date</th>
+                            <th className="p-2.5 text-left text-xs font-semibold text-slate-600">Réf. CM</th>
+                            <th className="p-2.5 text-right text-xs font-semibold text-slate-600 border-r border-slate-200">Montant CM (DH)</th>
+                            <th className="p-2.5 text-left text-xs font-semibold text-slate-600">STAN / Réf.</th>
+                            <th className="p-2.5 text-center text-xs font-semibold text-slate-600">Type</th>
+                            <th className="p-2.5 text-right text-xs font-semibold text-slate-600 border-r border-slate-200">Montant (DH)</th>
+                            <th className="p-2.5 text-left text-xs font-semibold text-slate-600">Relevé bancaire</th>
+                            <th className="p-2.5 text-left text-xs font-semibold text-slate-600">Libellé</th>
+                            <th className="p-2.5 text-right text-xs font-semibold text-slate-600">Montant bancaire (DH)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(() => {
+                            const rows = rapprochementResult.matches
+                            const rowspans: number[] = new Array(rows.length).fill(0)
+                            const groupIndices: number[] = new Array(rows.length).fill(0)
+                            let i = 0
+                            let gIdx = 0
+                            while (i < rows.length) {
+                              const key = `${rows[i].date}|${rows[i].cmReference}|${rows[i].cmMontant}`
+                              let j = i + 1
+                              while (j < rows.length) {
+                                const nextKey = `${rows[j].date}|${rows[j].cmReference}|${rows[j].cmMontant}`
+                                if (nextKey !== key) break
+                                groupIndices[j] = gIdx
+                                j++
+                              }
+                              groupIndices[i] = gIdx
+                              rowspans[i] = j - i
+                              gIdx++
+                              i = j
+                            }
+                            return rows.map((match, idx) => (
+                              <tr key={idx} className={`border-b transition-colors hover:bg-emerald-50/60 ${groupIndices[idx] % 2 === 0 ? "bg-white" : "bg-slate-50/40"}`}>
+                                {rowspans[idx] > 0 && (
+                                  <>
+                                    <td rowSpan={rowspans[idx]} className="p-2.5 font-mono text-xs whitespace-nowrap text-slate-700 align-top border-r">{match.date}</td>
+                                    <td rowSpan={rowspans[idx]} className="p-2.5 font-mono text-xs text-slate-700 align-top border-r">{match.cmReference || "—"}</td>
+                                    <td rowSpan={rowspans[idx]} className="p-2.5 text-right font-mono text-xs font-medium text-slate-800 align-top border-r border-slate-200">{match.cmMontant || "—"}</td>
+                                  </>
+                                )}
+                                <td className="p-2.5 font-mono text-xs text-slate-700">
+                                  {match.cmStan || "—"}
+                                </td>
+                                <td className="p-2.5 text-center text-xs font-medium text-slate-600">
+                                  {match.cmType || <span className="text-slate-300">—</span>}
+                                </td>
+                                <td className="p-2.5 text-right font-mono text-xs font-medium text-emerald-700 border-r border-slate-200">
+                                  {match.cmMontantTransaction || <span className="text-slate-300">—</span>}
+                                </td>
+                                {rowspans[idx] > 0 && (
+                                  <>
+                                    <td rowSpan={rowspans[idx]} className="p-2.5 text-xs text-slate-600 align-top max-w-[160px]">
+                                      {match.bankStatementName
+                                        ? <span className="text-sky-700 font-medium break-words">{match.bankStatementName}</span>
+                                        : <span className="text-slate-300 italic">Aucun relevé</span>}
+                                    </td>
+                                    <td rowSpan={rowspans[idx]} className="p-2.5 text-xs text-slate-600 align-top max-w-[180px]">
+                                      {match.bankLibelle || <span className="text-slate-300">—</span>}
+                                    </td>
+                                    <td rowSpan={rowspans[idx]} className="p-2.5 text-right font-mono text-xs font-medium align-top">
+                                      {match.bankMontant
+                                        ? <span className="text-blue-700">{match.bankMontant}</span>
+                                        : <span className="text-slate-300">—</span>}
+                                    </td>
+                                  </>
+                                )}
+                              </tr>
+                            ))
+                          })()}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

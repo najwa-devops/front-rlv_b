@@ -47,22 +47,7 @@ function BankListPageContent() {
     }
 
     useEffect(() => {
-        const resetTemporaryStatementsOnRefresh = async () => {
-            setLoading(true)
-            try {
-                const existing = await api.getAllBankStatements({ limit: 1000 })
-                const temporary = (Array.isArray(existing) ? existing : []).filter((s) => !isAccountedStatus(s.status))
-                if (temporary.length > 0) {
-                    await Promise.allSettled(temporary.map((s) => api.deleteBankStatement(s.id)))
-                }
-            } catch (error) {
-                console.error("Error clearing temporary bank statements on refresh:", error)
-            } finally {
-                await loadData()
-            }
-        }
-
-        resetTemporaryStatementsOnRefresh()
+        loadData()
     }, [])
 
     useEffect(() => {

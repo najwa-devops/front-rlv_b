@@ -2,6 +2,7 @@ import {
   CentreMonetiqueBatchDetail,
   CentreMonetiqueBatchSummary,
   CentreMonetiqueUploadResponse,
+  RapprochementResult,
 } from "./types"
 
 const RAW_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ""
@@ -27,12 +28,14 @@ async function parseApiError(response: Response): Promise<string> {
 export async function uploadCentreMonetique(
   file: File,
   year?: number,
-  structure: "AUTO" | "CMI" | "BARID_BANK" = "AUTO"
+  structure: "AUTO" | "CMI" | "BARID_BANK" = "AUTO",
+  rib?: string
 ): Promise<CentreMonetiqueUploadResponse> {
   const formData = new FormData()
   formData.append("file", file)
   if (year) formData.append("year", String(year))
   formData.append("structure", structure)
+  if (rib && rib.trim()) formData.append("rib", rib.trim())
 
   const response = await fetch(`${API_BASE_URL}/api/v2/centre-monetique/upload`, {
     method: "POST",
@@ -93,4 +96,20 @@ export async function saveCentreMonetiqueRows(
 
 export function getCentreMonetiqueFileUrl(id: number): string {
   return `${API_BASE_URL}/api/v2/centre-monetique/${id}/file`
+}
+
+export async function updateCentreMonetiqueBatchRib(id: number, rib: string): Promise<CentreMonetiqueBatchDetail> {
+  const response = await fetch(`${API_BASE_URL}/api/v2/centre-monetique/${id}/rib`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ rib }),
+  })
+  if (!response.ok) throw new Error(await parseApiError(response))
+  return response.json()
+}
+
+export async function getRapprochement(id: number): Promise<RapprochementResult> {
+  const response = await fetch(`${API_BASE_URL}/api/v2/centre-monetique/${id}/rapprochement`)
+  if (!response.ok) throw new Error(await parseApiError(response))
+  return response.json()
 }
