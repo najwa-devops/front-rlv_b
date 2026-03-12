@@ -28,7 +28,7 @@ async function parseApiError(response: Response): Promise<string> {
 export async function uploadCentreMonetique(
   file: File,
   year?: number,
-  structure: "AUTO" | "CMI" | "BARID_BANK" = "AUTO",
+  structure: "AUTO" | "CMI" | "BARID_BANK" | "AMEX" = "AUTO",
   rib?: string
 ): Promise<CentreMonetiqueUploadResponse> {
   const formData = new FormData()
@@ -61,7 +61,7 @@ export async function getCentreMonetiqueBatchById(id: number, includeRawOcr = fa
 export async function reprocessCentreMonetique(
   id: number,
   year?: number,
-  structure: "AUTO" | "CMI" | "BARID_BANK" = "AUTO"
+  structure: "AUTO" | "CMI" | "BARID_BANK" | "AMEX" = "AUTO"
 ): Promise<CentreMonetiqueUploadResponse> {
   const queryParts: string[] = []
   if (year) queryParts.push(`year=${year}`)

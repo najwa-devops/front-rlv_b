@@ -71,7 +71,7 @@ export default function CentreMonetiquePage() {
   const [modalRowsPerPage, setModalRowsPerPage] = useState("50")
   const [modalGlobalRowsPerPage, setModalGlobalRowsPerPage] = useState("50")
   const [modalPage, setModalPage] = useState(1)
-  const [selectedStructure, setSelectedStructure] = useState<"AUTO" | "CMI" | "BARID_BANK">("AUTO")
+  const [selectedStructure, setSelectedStructure] = useState<"AUTO" | "CMI" | "BARID_BANK" | "AMEX">("AUTO")
   const [accountOptions, setAccountOptions] = useState<Account[]>([])
   const [baridAccountSelections, setBaridAccountSelections] = useState<Record<string, string>>({})
   const [editableRows, setEditableRows] = useState<CentreMonetiqueExtractionRow[]>([])
@@ -277,8 +277,80 @@ export default function CentreMonetiquePage() {
     return rows
   }, [detailRows, selected?.structure, baridAccountSelections])
 
+  type AmexDisplayRow = {
+    key: string
+    rowIndex: number
+    terminalId: string
+    cardNumber: string
+    date: string
+    transactionDate: string
+    submissionAmount: string
+    discountAmount: string
+    netAmount: string
+    isTotal: boolean
+    totalLabel?: string
+  }
+
+  const amexRows: AmexDisplayRow[] = useMemo(() => {
+    if (selected?.structure !== "AMEX") return []
+    return detailRows
+      .map((row, idx) => {
+        const section = (row.section || "").trim()
+        if (!section.startsWith("AMEX ")) return null
+        const upper = section.toUpperCase()
+        if (upper === "AMEX SETTLEMENT" || upper === "AMEX TERMINAL") return null
+
+        if (upper === "AMEX TOTAL TERMINAL") {
+          return {
+            key: `amex-total-terminal-${idx}`,
+            rowIndex: idx,
+            terminalId: row.reference || "",
+            cardNumber: "",
+            date: "",
+            transactionDate: "",
+            submissionAmount: row.montant || "",
+            discountAmount: row.debit || "",
+            netAmount: row.credit || "",
+            isTotal: true,
+            totalLabel: "Total terminal",
+          } as AmexDisplayRow
+        }
+
+        if (upper === "AMEX SUB TOTAL") {
+          return {
+            key: `amex-sub-total-${idx}`,
+            rowIndex: idx,
+            terminalId: "",
+            cardNumber: row.reference || "",
+            date: row.date || "",
+            transactionDate: "",
+            submissionAmount: row.montant || "",
+            discountAmount: row.debit || "",
+            netAmount: row.credit || "",
+            isTotal: true,
+            totalLabel: "Sous-total règlement",
+          } as AmexDisplayRow
+        }
+
+        const terminalId = section.replace(/^AMEX\s+/i, "").trim()
+        return {
+          key: `amex-${terminalId}-${row.date}-${row.reference}-${idx}`,
+          rowIndex: idx,
+          terminalId,
+          cardNumber: row.reference || "",
+          date: row.date || "",
+          transactionDate: row.dc || "",
+          submissionAmount: row.montant || "",
+          discountAmount: row.debit || "",
+          netAmount: row.credit || "",
+          isTotal: false,
+        } as AmexDisplayRow
+      })
+      .filter((r): r is AmexDisplayRow => r !== null)
+  }, [detailRows, selected?.structure])
+
   const cmiRows: CmiDisplayRow[] = useMemo(() => {
-    if (selected?.structure === "BARID_BANK") return []
+    if (selected?.structure === "BARID_BANK" || selected?.structure === "AMEX") return []
 
     const rows: CmiDisplayRow[] = []
     let currentTransactionIndexes: number[] = []
@@ -392,7 +464,10 @@ export default function CentreMonetiquePage() {
     return rows
   }, [detailRows, selected?.structure])
 
-  const modalRows = selected?.structure === "BARID_BANK" ? baridRows : cmiRows
+  const modalRows =
+    selected?.structure === "BARID_BANK" ? baridRows :
+    selected?.structure === "AMEX" ? amexRows :
+    cmiRows
 
   const totalModalPages = useMemo(() => {
     const size = Math.max(1, Number(modalRowsPerPage))
@@ -572,6 +647,21 @@ export default function CentreMonetiquePage() {
       ]))
       return
     }
+    if (selected?.structure === "AMEX") {
+      setEditableRows((prev) => ([
+        ...prev,
+        {
+          section: "AMEX TX",
+          date: "",
+          reference: "",
+          montant: "",
+          debit: "",
+          credit: "",
+          dc: "C",
+        },
+      ]))
+      return
+    }
     setEditableRows((prev) => ([
       ...prev,
       {
@@ -701,7 +791,7 @@ export default function CentreMonetiquePage() {
                 <p className="text-muted-foreground text-xs">Forcer un modèle spécifique</p>
               </div>
             </div>
-            <Select value={selectedStructure} onValueChange={(value) => setSelectedStructure(value as "AUTO" | "CMI" | "BARID_BANK")}>
+            <Select value={selectedStructure} onValueChange={(value) => setSelectedStructure(value as "AUTO" | "CMI" | "BARID_BANK" | "AMEX")}>
               <SelectTrigger className="w-full sm:w-[280px] bg-background">
                 <SelectValue placeholder="Choisir une structure" />
               </SelectTrigger>
@@ -709,6 +799,7 @@ export default function CentreMonetiquePage() {
                 <SelectItem value="AUTO">Détection automatique</SelectItem>
                 <SelectItem value="CMI">CMI</SelectItem>
                 <SelectItem value="BARID_BANK">Barid Bank</SelectItem>
+                <SelectItem value="AMEX">American Express (AMEX)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -895,7 +986,7 @@ export default function CentreMonetiquePage() {
                         <Button size="icon" variant="outline" onClick={() => openDetail(batch.id)} title="Voir détail">
                           <Eye className="h-4 w-4" />
                         </Button>
-                        {batch.rib && (
+                        {batch.isLinkedToStatement && (
                           <Button size="icon" variant="outline" onClick={() => handleRapprochement(batch.id)}
                             title="Voir le rapprochement avec les relevés bancaires"
                             className="text-sky-600 border-sky-300 hover:bg-sky-50">
@@ -1019,6 +1110,14 @@ export default function CentreMonetiquePage() {
                 <div><span className="font-medium">Période:</span> {selected.statementPeriod || "-"}</div>
               </div>
 
+              {selected.rib && (
+                <div className="flex items-center gap-2 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm">
+                  <CreditCard className="h-4 w-4 text-sky-600 shrink-0" />
+                  <span className="font-medium text-sky-700">RIB :</span>
+                  <span className="font-mono text-xs bg-white border border-sky-200 px-2 py-0.5 rounded text-sky-900">{selected.rib}</span>
+                </div>
+              )}
+
               <div className="flex items-center justify-between rounded-md border border-sky-200 bg-sky-50/70 px-3 py-2 text-xs">
                 <span className="text-slate-600">Pagination globale du modal</span>
                 <div className="w-[170px]">
@@ -1071,6 +1170,16 @@ export default function CentreMonetiquePage() {
                           <th className="p-2 text-left">Comm H.T règlement</th>
                           <th className="p-2 text-left">Comm TVA règlement</th>
                         </>
+                      ) : selected.structure === "AMEX" ? (
+                        <>
+                          <th className="p-2 text-left">Date soumission</th>
+                          <th className="p-2 text-left">Date transaction</th>
+                          <th className="p-2 text-left">Terminal ID</th>
+                          <th className="p-2 text-left">Numéro de carte</th>
+                          <th className="p-2 text-right">Montant soumission (DH)</th>
+                          <th className="p-2 text-right">Remise (DH)</th>
+                          <th className="p-2 text-right">Montant net (DH)</th>
+                        </>
                       ) : (
                         <>
                           <th className="p-2 text-left">Section</th>
@@ -1088,7 +1197,70 @@ export default function CentreMonetiquePage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {selected.structure === "BARID_BANK" ? (
+                    {selected.structure === "AMEX" ? (
+                      (paginatedDetailRows as AmexDisplayRow[]).map((row) => (
+                        <tr key={row.key} className={`border-b ${row.isTotal ? "bg-muted/40 font-semibold" : "hover:bg-muted/10"}`}>
+                          {/* Date soumission */}
+                          <td className="p-2">
+                            {row.isTotal ? (
+                              <span className="text-xs text-muted-foreground italic">{row.totalLabel}</span>
+                            ) : isEditing ? (
+                              <Input value={row.date} className="h-8" onChange={(e) => updateRowField(row.rowIndex, "date", e.target.value)} />
+                            ) : (
+                              row.date
+                            )}
+                          </td>
+                          {/* Date transaction */}
+                          <td className="p-2 text-xs text-muted-foreground">
+                            {row.isTotal ? "" : isEditing ? (
+                              <Input value={row.transactionDate} className="h-8" onChange={(e) => updateRowField(row.rowIndex, "dc", e.target.value)} />
+                            ) : (
+                              row.transactionDate
+                            )}
+                          </td>
+                          {/* Terminal ID */}
+                          <td className="p-2 font-mono text-xs">
+                            {row.isTotal ? "" : isEditing ? (
+                              <Input value={row.terminalId} className="h-8" onChange={(e) => updateRowField(row.rowIndex, "section", `AMEX ${e.target.value}`)} />
+                            ) : (
+                              row.terminalId
+                            )}
+                          </td>
+                          {/* Numéro de carte */}
+                          <td className="p-2 font-mono text-xs">
+                            {row.isTotal ? "" : isEditing ? (
+                              <Input value={row.cardNumber} className="h-8" onChange={(e) => updateRowField(row.rowIndex, "reference", e.target.value)} />
+                            ) : (
+                              row.cardNumber
+                            )}
+                          </td>
+                          {/* Montant soumission */}
+                          <td className="p-2 text-right font-mono">
+                            {isEditing ? (
+                              <Input value={row.submissionAmount} className="h-8 text-right" onChange={(e) => updateRowField(row.rowIndex, "montant", e.target.value)} />
+                            ) : (
+                              row.submissionAmount
+                            )}
+                          </td>
+                          {/* Remise */}
+                          <td className="p-2 text-right font-mono text-amber-700">
+                            {isEditing ? (
+                              <Input value={row.discountAmount} className="h-8 text-right" onChange={(e) => updateRowField(row.rowIndex, "debit", e.target.value)} />
+                            ) : (
+                              row.discountAmount
+                            )}
+                          </td>
+                          {/* Montant net */}
+                          <td className="p-2 text-right font-mono font-medium text-emerald-700">
+                            {isEditing ? (
+                              <Input value={row.netAmount} className="h-8 text-right" onChange={(e) => updateRowField(row.rowIndex, "credit", e.target.value)} />
+                            ) : (
+                              row.netAmount
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    ) : selected.structure === "BARID_BANK" ? (
                       (paginatedDetailRows as BaridDisplayRow[]).map((row) => (
                         <tr key={row.key} className="border-b">
                           <td className="p-2 font-mono">
@@ -1349,12 +1521,12 @@ export default function CentreMonetiquePage() {
                 {/* Résumé compact */}
                 <div className="flex flex-wrap items-center gap-4 p-3 bg-slate-50 rounded-lg border text-sm">
                   <div>
-                    <span className="text-muted-foreground">Total transactions CM : </span>
+                    <span className="text-muted-foreground">Transactions CM : </span>
                     <span className="font-bold text-slate-800">{rapprochementResult.totalCmTransactions}</span>
                   </div>
                   <div className="w-px h-4 bg-border" />
                   <div>
-                    <span className="text-muted-foreground">Transactions CM détaillées : </span>
+                    <span className="text-muted-foreground">Avec correspondance bancaire : </span>
                     <Badge className={rapprochementResult.matchedCount > 0
                       ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/30"
                       : "bg-slate-100 text-slate-600"}>

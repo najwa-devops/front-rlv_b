@@ -33,6 +33,7 @@ export interface CentreMonetiqueBatchSummary {
   errorMessage?: string
   createdAt: string
   updatedAt?: string
+  isLinkedToStatement?: boolean
 }
 
 export interface CentreMonetiqueBatchDetail extends CentreMonetiqueBatchSummary {
