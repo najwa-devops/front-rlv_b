@@ -33,7 +33,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import type { BankStatementV2, BankTransactionV2 } from "@/lib/types"
+import type { BankStatementV2, BankTransactionV2 } from "@/releve-bancaire/types"
 import { formatFileSize, formatDate } from "@/lib/utils"
 import { BankStatementDetailModal } from "./bank-statement-detail-modal"
 

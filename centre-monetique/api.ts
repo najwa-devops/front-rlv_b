@@ -2,7 +2,6 @@ import {
   CentreMonetiqueBatchDetail,
   CentreMonetiqueBatchSummary,
   CentreMonetiqueUploadResponse,
-  RapprochementResult,
 } from "./types"
 
 const RAW_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ""
@@ -104,12 +103,6 @@ export async function updateCentreMonetiqueBatchRib(id: number, rib: string): Pr
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ rib }),
   })
-  if (!response.ok) throw new Error(await parseApiError(response))
-  return response.json()
-}
-
-export async function getRapprochement(id: number): Promise<RapprochementResult> {
-  const response = await fetch(`${API_BASE_URL}/api/v2/centre-monetique/${id}/rapprochement`)
   if (!response.ok) throw new Error(await parseApiError(response))
   return response.json()
 }

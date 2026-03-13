@@ -42,26 +42,6 @@ export interface CentreMonetiqueBatchDetail extends CentreMonetiqueBatchSummary 
   rows: CentreMonetiqueExtractionRow[]
 }
 
-export interface RapprochementMatch {
-  date: string
-  cmReference: string
-  cmMontant: string
-  cmStan: string
-  cmType: string
-  cmMontantTransaction: string
-  bankStatementName: string
-  bankMontant: string
-  bankLibelle: string
-}
-
-export interface RapprochementResult {
-  batchId: number
-  batchRib: string
-  totalCmTransactions: number
-  matchedCount: number
-  matches: RapprochementMatch[]
-}
-
 export interface CentreMonetiqueUploadResponse {
   success: boolean
   batch: CentreMonetiqueBatchDetail

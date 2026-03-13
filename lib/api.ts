@@ -2,10 +2,8 @@ import {
   Account,
   CreateAccountRequest,
   UpdateAccountRequest,
-  BankStatementV2,
-  BankTransactionV2,
-  BankOption
 } from "./types"
+import type { BankStatementV2, BankTransactionV2, BankOption } from "@/releve-bancaire/types"
 
 const RAW_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ""
 const API_BASE_URL = RAW_API_BASE_URL.replace(/\/$/, "") === "/api" ? "" : RAW_API_BASE_URL.replace(/\/$/, "")

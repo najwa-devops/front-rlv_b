@@ -9,7 +9,7 @@ import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
 import { api } from "@/lib/api"
-import { type BankOption } from "@/lib/types"
+import { type BankOption } from "@/releve-bancaire/types"
 
 export function BankSettingsPage() {
     const [supportedBanks, setSupportedBanks] = useState<BankOption[]>([])

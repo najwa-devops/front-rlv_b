@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { FileText, Scan, Loader2, CheckCircle2, Zap, Eye } from "lucide-react"
-import type { LocalBankStatement } from "@/lib/types"
+import type { LocalBankStatement } from "@/releve-bancaire/types"
 import { formatFileSize, formatDate } from "@/lib/utils"
 import { toast } from "sonner"
 

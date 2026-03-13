@@ -5,11 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Upload, FileText, X, Loader2, CheckCircle, AlertCircle, CloudUpload, Sparkles, Building2 } from "lucide-react"
-import type { BankStatementV2 } from "@/lib/types"
+import type { BankStatementV2 } from "@/releve-bancaire/types"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 import { api } from "@/lib/api"
-import { type BankOption } from "@/lib/types"
+import { type BankOption } from "@/releve-bancaire/types"
 
 interface FileItem {
     file: File

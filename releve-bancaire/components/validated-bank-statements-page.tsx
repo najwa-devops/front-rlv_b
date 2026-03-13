@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, Download, FileText } from "lucide-react"
-import type { BankStatementV2 } from "@/lib/types"
+import type { BankStatementV2 } from "@/releve-bancaire/types"
 import { BankStatementTable } from "./bank-statement-table"
 
 interface ValidatedBankStatementsPageProps {

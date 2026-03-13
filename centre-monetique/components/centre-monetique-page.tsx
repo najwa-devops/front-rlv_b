@@ -44,14 +44,15 @@ import {
 } from "@/components/ui/alert-dialog"
 
 import { api as bankingApi } from "@/lib/api"
-import * as centreApi from "@/lib/centre-monetique/api"
+import * as centreApi from "@/centre-monetique/api"
+import * as liaisonApi from "@/liaison-rlv_b-ctr_mntq/api"
 import { Account } from "@/lib/types"
 import {
   CentreMonetiqueBatchDetail,
   CentreMonetiqueBatchSummary,
   CentreMonetiqueExtractionRow,
-  RapprochementResult,
-} from "@/lib/centre-monetique/types"
+} from "@/centre-monetique/types"
+import { RapprochementResult } from "@/liaison-rlv_b-ctr_mntq/types"
 
 export default function CentreMonetiquePage() {
   const [loading, setLoading] = useState(true)
@@ -612,7 +613,7 @@ export default function CentreMonetiquePage() {
     setRapprochementResult(null)
     setRapprochementOpen(true)
     try {
-      const result = await centreApi.getRapprochement(batchId)
+      const result = await liaisonApi.getRapprochement(batchId)
       setRapprochementResult(result)
     } catch (error: any) {
       toast.error(error?.message || "Erreur rapprochement")

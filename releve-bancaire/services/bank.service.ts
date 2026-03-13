@@ -1,5 +1,5 @@
-import apiClient from '../api-client';
-import { LocalBankStatement } from '@/src/types';
+import apiClient from '@/src/api/api-client';
+import { LocalBankStatement } from '@/releve-bancaire/types';
 import { USE_MOCK, MOCK_BANK_STATEMENTS_BY_DOSSIER } from '@/src/mock/data.mock';
 
 /**

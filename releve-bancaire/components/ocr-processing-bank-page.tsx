@@ -23,7 +23,7 @@ import {
     RefreshCw,
     Eye,
 } from "lucide-react"
-import type { BankStatementV2, BankTransactionV2, LocalBankStatement, BankStatementField } from "@/lib/types"
+import type { BankStatementV2, BankTransactionV2, LocalBankStatement, BankStatementField } from "@/releve-bancaire/types"
 import { toast } from "sonner"
 import { formatDate } from "@/lib/utils"
 import { BankTransactionTable } from "./bank-statement-table"

@@ -15,10 +15,10 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { BankStatementTable } from "@/components/bank-statement-table"
-import { UploadBankPage } from "@/components/upload-bank-page"
+import { BankStatementTable } from "@/releve-bancaire/components/bank-statement-table"
+import { UploadBankPage } from "@/releve-bancaire/components/upload-bank-page"
 import { api } from "@/lib/api"
-import { BankStatementV2 } from "@/lib/types"
+import { BankStatementV2 } from "@/releve-bancaire/types"
 import { toast } from "sonner"
 
 function BankListPageContent() {

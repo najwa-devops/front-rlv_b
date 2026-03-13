@@ -1,4 +1,4 @@
-import type { BankOption } from "@/lib/types"
+import type { BankOption } from "@/releve-bancaire/types"
 import { api } from "@/lib/api"
 
 export async function getConfiguredBankCodes(): Promise<string[]> {

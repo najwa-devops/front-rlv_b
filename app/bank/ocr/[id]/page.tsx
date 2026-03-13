@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect, use } from "react"
-import { OcrProcessingBankPage } from "@/components/ocr-processing-bank-page"
+import { OcrProcessingBankPage } from "@/releve-bancaire/components/ocr-processing-bank-page"
 import { api } from "@/lib/api"
-import { BankStatementV2, LocalBankStatement } from "@/lib/types"
+import { BankStatementV2, LocalBankStatement } from "@/releve-bancaire/types"
 import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 

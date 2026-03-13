@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react"
 import {
     Dialog,
     DialogContent,
@@ -65,7 +65,10 @@ import {
     CheckCircle2,
     Calculator,
 } from "lucide-react"
-import type { Account, BankStatementV2, BankTransactionV2 } from "@/lib/types"
+import type { Account } from "@/lib/types"
+import type { BankStatementV2, BankTransactionV2 } from "@/releve-bancaire/types"
+import type { CmExpansion } from "@/liaison-rlv_b-ctr_mntq/types"
+import { getCmExpansionsForStatement } from "@/liaison-rlv_b-ctr_mntq/api"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -170,6 +173,7 @@ export function BankStatementDetailModal({
     const [localStatement, setLocalStatement] = useState<BankStatementV2 | null>(null)
     const [ttcUpdating, setTtcUpdating] = useState(false)
     const [newTransaction, setNewTransaction] = useState<NewTransactionForm>(EMPTY_NEW_TRANSACTION)
+    const [showNewTransactionForm, setShowNewTransactionForm] = useState(false)
     const [editingCell, setEditingCell] = useState<{
         id: number
         field: "transactionIndex" | "dateOperation" | "dateValeur" | "compte" | "libelle" | "debit" | "credit"
@@ -177,6 +181,9 @@ export function BankStatementDetailModal({
     const [openComptePopoverTxId, setOpenComptePopoverTxId] = useState<number | null>(null)
     const [openNewComptePopover, setOpenNewComptePopover] = useState(false)
     const lastLoadedId = useRef<number | null>(null)
+    const [cmExpansions, setCmExpansions] = useState<Record<number, CmExpansion>>({})
+    // bankTransactionIds où l'utilisateur a décoché l'expansion (affiche la ligne originale)
+    const [collapsedCmTxIds, setCollapsedCmTxIds] = useState<Set<number>>(new Set())
 
     useEffect(() => {
         if (open && statement) {
@@ -192,6 +199,7 @@ export function BankStatementDetailModal({
             lastLoadedId.current = null
             setOpenComptePopoverTxId(null)
             setOpenNewComptePopover(false)
+            setShowNewTransactionForm(false)
         }
     }, [open, statement?.id, statement?.status, statement?.transactionCount])
 
@@ -231,6 +239,15 @@ export function BankStatementDetailModal({
                 ...prev,
                 transactionIndex: Math.max(sorted.length + 1, 1),
             }))
+            // Charger les expansions CM en arrière-plan (non bloquant)
+            getCmExpansionsForStatement(id).then((expansions) => {
+                const map: Record<number, CmExpansion> = {}
+                for (const exp of expansions) {
+                    map[exp.bankTransactionId] = exp
+                }
+                setCmExpansions(map)
+                setCollapsedCmTxIds(new Set()) // réinitialiser les préférences à chaque chargement
+            }).catch(() => {/* silencieux */})
             return data
         } catch (error) {
             console.error("Error loading full data:", error)
@@ -435,6 +452,7 @@ export function BankStatementDetailModal({
             ...EMPTY_NEW_TRANSACTION,
             transactionIndex: Math.max(merged.length + 1, 1),
         })
+        setShowNewTransactionForm(false)
         toast.success("Transaction prête à être enregistrée")
     }
 
@@ -765,121 +783,135 @@ export function BankStatementDetailModal({
 
                     {!isAccounted && (
                         <div className="rounded-md border bg-card shadow-sm p-4 shrink-0">
-                            <div className="grid grid-cols-1 md:grid-cols-8 gap-3 items-end">
-                                <div className="space-y-1">
-                                    <Label>N° Transaction</Label>
-                                    <Input
-                                        type="number"
-                                        min={1}
-                                        value={newTransaction.transactionIndex}
-                                        onChange={(e) => setNewTransaction((prev) => ({ ...prev, transactionIndex: Number(e.target.value || 1) }))}
-                                    />
+                            {!showNewTransactionForm ? (
+                                <div className="flex justify-end">
+                                    <Button className="gap-2" onClick={() => setShowNewTransactionForm(true)}>
+                                        <Plus className="h-4 w-4" />
+                                        Ajouter transaction
+                                    </Button>
                                 </div>
-                                <div className="space-y-1">
-                                    <Label>Date Opération</Label>
-                                    <Input
-                                        type="date"
-                                        value={newTransaction.dateOperation}
-                                        onChange={(e) => setNewTransaction((prev) => ({ ...prev, dateOperation: e.target.value }))}
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label>Date Valeur</Label>
-                                    <Input
-                                        type="date"
-                                        value={newTransaction.dateValeur}
-                                        onChange={(e) => setNewTransaction((prev) => ({ ...prev, dateValeur: e.target.value }))}
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label>Compte</Label>
-                                    <Popover open={openNewComptePopover} onOpenChange={setOpenNewComptePopover}>
-                                        <PopoverTrigger asChild>
-                                            <div
-                                                className="min-h-10 rounded-md border px-3 py-2 text-sm cursor-pointer hover:bg-muted/40"
-                                                role="button"
-                                                tabIndex={0}
-                                            >
-                                                <div className="font-mono">
-                                                    {newTransaction.compte || "Choisir un compte"}
-                                                </div>
-                                                {selectedNewTransactionAccount ? (
-                                                    <div className="text-[11px] text-muted-foreground leading-tight mt-0.5">
-                                                        {selectedNewTransactionAccount.libelle}
-                                                    </div>
-                                                ) : null}
-                                            </div>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-[320px] p-0" align="start">
-                                            <Command>
-                                                <CommandInput placeholder="Chercher un compte..." />
-                                                <CommandList className="max-h-[260px] overflow-y-auto">
-                                                    <CommandEmpty>Aucun compte trouvé.</CommandEmpty>
-                                                    <CommandGroup>
-                                                        {loadingAccounts ? (
-                                                            <div className="flex items-center justify-center p-4">
-                                                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                                                Chargement...
+                            ) : (
+                                <>
+                                    <div className="grid grid-cols-1 md:grid-cols-8 gap-3 items-end">
+                                        <div className="space-y-1">
+                                            <Label>N° Transaction</Label>
+                                            <Input
+                                                type="number"
+                                                min={1}
+                                                value={newTransaction.transactionIndex}
+                                                onChange={(e) => setNewTransaction((prev) => ({ ...prev, transactionIndex: Number(e.target.value || 1) }))}
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label>Date Opération</Label>
+                                            <Input
+                                                type="date"
+                                                value={newTransaction.dateOperation}
+                                                onChange={(e) => setNewTransaction((prev) => ({ ...prev, dateOperation: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label>Date Valeur</Label>
+                                            <Input
+                                                type="date"
+                                                value={newTransaction.dateValeur}
+                                                onChange={(e) => setNewTransaction((prev) => ({ ...prev, dateValeur: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label>Compte</Label>
+                                            <Popover open={openNewComptePopover} onOpenChange={setOpenNewComptePopover}>
+                                                <PopoverTrigger asChild>
+                                                    <div
+                                                        className="min-h-10 rounded-md border px-3 py-2 text-sm cursor-pointer hover:bg-muted/40"
+                                                        role="button"
+                                                        tabIndex={0}
+                                                    >
+                                                        <div className="font-mono">
+                                                            {newTransaction.compte || "Choisir un compte"}
+                                                        </div>
+                                                        {selectedNewTransactionAccount ? (
+                                                            <div className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+                                                                {selectedNewTransactionAccount.libelle}
                                                             </div>
-                                                        ) : accounts.map((account) => (
-                                                            <CommandItem
-                                                                key={account.id}
-                                                                value={`${account.code} ${account.libelle}`}
-                                                                onSelect={() => {
-                                                                    setNewTransaction((prev) => ({ ...prev, compte: account.code }))
-                                                                    setOpenNewComptePopover(false)
-                                                                }}
-                                                                className="flex flex-col items-start gap-1 py-2 cursor-pointer"
-                                                            >
-                                                                <div className="flex items-center w-full justify-between">
-                                                                    <span className="font-medium text-sm">{account.libelle}</span>
-                                                                    {newTransaction.compte === account.code ? (
-                                                                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                                                                    ) : null}
-                                                                </div>
-                                                                <span className="text-xs text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">
-                                                                    {account.code}
-                                                                </span>
-                                                            </CommandItem>
-                                                        ))}
-                                                    </CommandGroup>
-                                                </CommandList>
-                                            </Command>
-                                        </PopoverContent>
-                                    </Popover>
-                                </div>
-                                <div className="space-y-1 md:col-span-2">
-                                    <Label>Libellé</Label>
-                                    <Input
-                                        value={newTransaction.libelle}
-                                        onChange={(e) => setNewTransaction((prev) => ({ ...prev, libelle: e.target.value }))}
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label>Débit</Label>
-                                    <Input
-                                        type="number"
-                                        step="0.01"
-                                        value={newTransaction.debit}
-                                        onChange={(e) => setNewTransaction((prev) => ({ ...prev, debit: Number(e.target.value || 0) }))}
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label>Crédit</Label>
-                                    <Input
-                                        type="number"
-                                        step="0.01"
-                                        value={newTransaction.credit}
-                                        onChange={(e) => setNewTransaction((prev) => ({ ...prev, credit: Number(e.target.value || 0) }))}
-                                    />
-                                </div>
-                            </div>
-                            <div className="mt-3 flex justify-end">
-                                <Button className="gap-2" onClick={handleAddTransaction}>
-                                    <Plus className="h-4 w-4" />
-                                    Ajouter transaction
-                                </Button>
-                            </div>
+                                                        ) : null}
+                                                    </div>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-[320px] p-0" align="start">
+                                                    <Command>
+                                                        <CommandInput placeholder="Chercher un compte..." />
+                                                        <CommandList className="max-h-[260px] overflow-y-auto">
+                                                            <CommandEmpty>Aucun compte trouvé.</CommandEmpty>
+                                                            <CommandGroup>
+                                                                {loadingAccounts ? (
+                                                                    <div className="flex items-center justify-center p-4">
+                                                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                                        Chargement...
+                                                                    </div>
+                                                                ) : accounts.map((account) => (
+                                                                    <CommandItem
+                                                                        key={account.id}
+                                                                        value={`${account.code} ${account.libelle}`}
+                                                                        onSelect={() => {
+                                                                            setNewTransaction((prev) => ({ ...prev, compte: account.code }))
+                                                                            setOpenNewComptePopover(false)
+                                                                        }}
+                                                                        className="flex flex-col items-start gap-1 py-2 cursor-pointer"
+                                                                    >
+                                                                        <div className="flex items-center w-full justify-between">
+                                                                            <span className="font-medium text-sm">{account.libelle}</span>
+                                                                            {newTransaction.compte === account.code ? (
+                                                                                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                                                            ) : null}
+                                                                        </div>
+                                                                        <span className="text-xs text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">
+                                                                            {account.code}
+                                                                        </span>
+                                                                    </CommandItem>
+                                                                ))}
+                                                            </CommandGroup>
+                                                        </CommandList>
+                                                    </Command>
+                                                </PopoverContent>
+                                            </Popover>
+                                        </div>
+                                        <div className="space-y-1 md:col-span-2">
+                                            <Label>Libellé</Label>
+                                            <Input
+                                                value={newTransaction.libelle}
+                                                onChange={(e) => setNewTransaction((prev) => ({ ...prev, libelle: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label>Débit</Label>
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                value={newTransaction.debit}
+                                                onChange={(e) => setNewTransaction((prev) => ({ ...prev, debit: Number(e.target.value || 0) }))}
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label>Crédit</Label>
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                value={newTransaction.credit}
+                                                onChange={(e) => setNewTransaction((prev) => ({ ...prev, credit: Number(e.target.value || 0) }))}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="mt-3 flex justify-end gap-2">
+                                        <Button variant="outline" onClick={() => setShowNewTransactionForm(false)}>
+                                            Annuler
+                                        </Button>
+                                        <Button className="gap-2" onClick={handleAddTransaction}>
+                                            <Plus className="h-4 w-4" />
+                                            Ajouter transaction
+                                        </Button>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     )}
 
@@ -932,6 +964,148 @@ export function BankStatementDetailModal({
                                     </TableHeader>
                                     <TableBody>
                                         {sortByIndex(editableTransactions).map((tx) => {
+                                            const cmExp = cmExpansions[tx.id]
+                                            const isExpanded = cmExp != null && !collapsedCmTxIds.has(tx.id)
+
+                                            // ---- Lignes CM de remplacement ----
+                                            if (isExpanded) {
+                                                const cmDisplayCompte = resolveDisplayCompte(tx.compte)
+                                                const cmCompteIsDefault = isDefaultCompte(cmDisplayCompte)
+                                                const cmHasCompteLibelle = (tx.compteLibelle || "").trim() !== ""
+                                                return (
+                                                    <React.Fragment key={`cm-group-${tx.id}`}>
+                                                        {/* Ligne d'en-tête du groupe CM */}
+                                                        <TableRow key={`cm-header-${tx.id}`} className="bg-emerald-50 border-l-4 border-emerald-400 hover:bg-emerald-100/60">
+                                                            <TableCell className="text-center">
+                                                                <Checkbox
+                                                                    checked={true}
+                                                                    onCheckedChange={() => {
+                                                                        setCollapsedCmTxIds((prev) => {
+                                                                            const next = new Set(prev)
+                                                                            next.add(tx.id)
+                                                                            return next
+                                                                        })
+                                                                    }}
+                                                                    className="border-emerald-500 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
+                                                                    title="Décocher pour revenir à la ligne originale"
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell className="text-xs font-semibold text-emerald-800" colSpan={2}>
+                                                                {cmExp.cmBatchOriginalName}
+                                                            </TableCell>
+                                                            <TableCell className="text-xs font-mono font-semibold text-emerald-700">
+                                                                {cmExp.cmReference}
+                                                            </TableCell>
+                                                            <TableCell className="text-xs font-semibold text-emerald-800">
+                                                                Solde net remise
+                                                            </TableCell>
+                                                            <TableCell className="text-right text-xs font-semibold text-red-500 bg-red-50/30" />
+                                                            <TableCell className="text-right text-xs font-semibold text-emerald-700 bg-emerald-50/50">
+                                                                {cmExp.cmMontant}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                        {/* Lignes de détail CM — même design que les lignes originales */}
+                                                        {cmExp.lines.map((line, li) => (
+                                                            <TableRow key={`cm-line-${tx.id}-${li}`} className="bg-emerald-50/40 border-l-4 border-emerald-300 hover:bg-emerald-50/80">
+                                                                <TableCell className="text-center">
+                                                                    <Badge variant="secondary" className="font-normal text-xs bg-emerald-100 text-emerald-700 border border-emerald-200">
+                                                                        {li + 1}
+                                                                    </Badge>
+                                                                </TableCell>
+                                                                <TableCell className="text-sm">{line.date}</TableCell>
+                                                                <TableCell className="text-sm text-muted-foreground">—</TableCell>
+                                                                <TableCell>
+                                                                    <div className={cn(
+                                                                        "inline-flex min-w-[145px] max-w-[250px] flex-col rounded-md border px-3 py-1.5 text-sm font-medium",
+                                                                        cmCompteIsDefault
+                                                                            ? "border-orange-500 bg-orange-100 text-orange-900"
+                                                                            : tx.isLinked
+                                                                                ? "border-orange-500 bg-transparent text-foreground"
+                                                                                : isSelectedCompte(tx.compte)
+                                                                                    ? "border-orange-500 bg-orange-100 text-orange-900"
+                                                                                    : "border-transparent text-muted-foreground"
+                                                                    )}>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className={cn(
+                                                                                "h-6 w-6 rounded flex items-center justify-center",
+                                                                                cmCompteIsDefault ? "bg-white text-orange-700"
+                                                                                    : tx.isLinked ? "bg-orange-100 text-orange-700"
+                                                                                    : isSelectedCompte(tx.compte) ? "bg-white text-orange-700"
+                                                                                    : "bg-muted text-muted-foreground"
+                                                                            )}>
+                                                                                <LinkIcon className="h-3.5 w-3.5" />
+                                                                            </div>
+                                                                            <span className="font-mono text-[13px]">{cmDisplayCompte}</span>
+                                                                        </div>
+                                                                        {cmHasCompteLibelle && (
+                                                                            <span className={cn("mt-0.5 text-[10px] leading-tight", cmCompteIsDefault ? "text-orange-900/90" : "text-muted-foreground")}>
+                                                                                {tx.compteLibelle}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </TableCell>
+                                                                <TableCell className="text-sm font-medium">{line.stan}</TableCell>
+                                                                <TableCell className="text-right font-medium text-red-600 bg-red-50/30">
+                                                                    {line.dcFlag === "D" ? line.montant : ""}
+                                                                </TableCell>
+                                                                <TableCell className="text-right font-medium text-emerald-600 bg-emerald-50/30">
+                                                                    {line.dcFlag !== "D" ? line.montant : ""}
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ))}
+                                                        {/* Ligne Commission HT — compte 614700000 en DÉBIT */}
+                                                        {cmExp.commissionHt && cmExp.commissionHt !== "" && (
+                                                            <TableRow key={`cm-comm-${tx.id}`} className="bg-emerald-50/40 border-l-4 border-emerald-300 hover:bg-emerald-50/80">
+                                                                <TableCell className="text-center">
+                                                                    <Badge variant="secondary" className="font-normal text-xs bg-emerald-100 text-emerald-700 border border-emerald-200">C</Badge>
+                                                                </TableCell>
+                                                                <TableCell className="text-sm text-muted-foreground">—</TableCell>
+                                                                <TableCell className="text-sm text-muted-foreground">—</TableCell>
+                                                                <TableCell>
+                                                                    <div className="inline-flex min-w-[145px] flex-col rounded-md border border-transparent px-3 py-1.5 text-sm font-medium text-muted-foreground">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className="h-6 w-6 rounded flex items-center justify-center bg-muted text-muted-foreground">
+                                                                                <LinkIcon className="h-3.5 w-3.5" />
+                                                                            </div>
+                                                                            <span className="font-mono text-[13px]">614700000</span>
+                                                                        </div>
+                                                                        <span className="mt-0.5 text-[10px] leading-tight text-muted-foreground">Commission HT</span>
+                                                                    </div>
+                                                                </TableCell>
+                                                                <TableCell className="text-sm text-muted-foreground">TOTAL COMMISSIONS HT</TableCell>
+                                                                <TableCell className="text-right font-medium text-red-600 bg-red-50/30">{cmExp.commissionHt}</TableCell>
+                                                                <TableCell className="bg-emerald-50/30" />
+                                                            </TableRow>
+                                                        )}
+                                                        {/* Ligne TVA — compte 345520100 en DÉBIT */}
+                                                        {cmExp.tvaSurCommissions && cmExp.tvaSurCommissions !== "" && (
+                                                            <TableRow key={`cm-tva-${tx.id}`} className="bg-emerald-50/40 border-l-4 border-emerald-300 hover:bg-emerald-50/80">
+                                                                <TableCell className="text-center">
+                                                                    <Badge variant="secondary" className="font-normal text-xs bg-emerald-100 text-emerald-700 border border-emerald-200">T</Badge>
+                                                                </TableCell>
+                                                                <TableCell className="text-sm text-muted-foreground">—</TableCell>
+                                                                <TableCell className="text-sm text-muted-foreground">—</TableCell>
+                                                                <TableCell>
+                                                                    <div className="inline-flex min-w-[145px] flex-col rounded-md border border-transparent px-3 py-1.5 text-sm font-medium text-muted-foreground">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className="h-6 w-6 rounded flex items-center justify-center bg-muted text-muted-foreground">
+                                                                                <LinkIcon className="h-3.5 w-3.5" />
+                                                                            </div>
+                                                                            <span className="font-mono text-[13px]">345520100</span>
+                                                                        </div>
+                                                                        <span className="mt-0.5 text-[10px] leading-tight text-muted-foreground">TVA sur commissions</span>
+                                                                    </div>
+                                                                </TableCell>
+                                                                <TableCell className="text-sm text-muted-foreground">TOTAL TVA SUR COMMISSIONS</TableCell>
+                                                                <TableCell className="text-right font-medium text-red-600 bg-red-50/30">{cmExp.tvaSurCommissions}</TableCell>
+                                                                <TableCell className="bg-emerald-50/30" />
+                                                            </TableRow>
+                                                        )}
+                                                    </React.Fragment>
+                                                )
+                                            }
+
+                                            // ---- Ligne bancaire originale ----
                                             const displayCompte = resolveDisplayCompte(tx.compte)
                                             const hasCompteLibelle = (tx.compteLibelle || "").trim() !== ""
                                             const compteIsDefault = isDefaultCompte(displayCompte)
@@ -942,15 +1116,26 @@ export function BankStatementDetailModal({
                                                 {isEditingCell(tx.id, "transactionIndex") ? (
                                                     renderEditableCell(tx, "transactionIndex", { type: "number" })
                                                 ) : (
-                                                    <Badge
-                                                        variant="secondary"
-                                                        className={cn("font-normal text-xs bg-muted text-muted-foreground", !isAccounted && "cursor-pointer")}
-                                                        onClick={() => {
-                                                            if (!isAccounted) setEditingCell({ id: tx.id, field: "transactionIndex" })
-                                                        }}
-                                                    >
-                                                        {tx.transactionIndex || tx.id}
-                                                    </Badge>
+                                                    <div className="flex flex-col items-center gap-1">
+                                                        <Badge
+                                                            variant="secondary"
+                                                            className={cn("font-normal text-xs bg-muted text-muted-foreground", !isAccounted && "cursor-pointer")}
+                                                            onClick={() => {
+                                                                if (!isAccounted) setEditingCell({ id: tx.id, field: "transactionIndex" })
+                                                            }}
+                                                        >
+                                                            {tx.transactionIndex || tx.id}
+                                                        </Badge>
+                                                        {cmExp != null && (
+                                                            <button
+                                                                className="text-[9px] text-amber-600 hover:text-amber-800 underline leading-none"
+                                                                onClick={() => setCollapsedCmTxIds((prev) => { const next = new Set(prev); next.delete(tx.id); return next })}
+                                                                title="Afficher les détails Centre Monétique"
+                                                            >
+                                                                CM
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 )}
                                             </TableCell>
                                             <TableCell>
