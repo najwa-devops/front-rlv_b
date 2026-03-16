@@ -135,6 +135,7 @@ export interface BankTransactionV2 {
   compte: string
   compteLibelle?: string | null
   isLinked: boolean
+  cmApplied?: boolean
   categorie: string
   role: string
   extractionConfidence: number

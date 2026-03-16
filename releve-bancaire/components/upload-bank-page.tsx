@@ -20,12 +20,13 @@ interface FileItem {
 }
 
 interface UploadBankPageProps {
-    onUpload: (files: File[], bankType?: string) => Promise<void>
+    onUpload: (file: File, bankType?: string) => Promise<void>
+    onUploadComplete?: () => Promise<void> | void
     onViewBankStatement: (statement: BankStatementV2) => void
     isDemoMode?: boolean
 }
 
-export function UploadBankPage({ onUpload, onViewBankStatement, isDemoMode }: UploadBankPageProps) {
+export function UploadBankPage({ onUpload, onUploadComplete, onViewBankStatement, isDemoMode }: UploadBankPageProps) {
     void onViewBankStatement
     void isDemoMode
     const [files, setFiles] = useState<FileItem[]>([])
@@ -117,33 +118,36 @@ export function UploadBankPage({ onUpload, onViewBankStatement, isDemoMode }: Up
     }
 
   const handleUpload = async () => {
-    const validFiles = files.filter((f) => f.status === "pending")
-    if (validFiles.length === 0) return
+    const pendingFiles = files.filter((f) => f.status === "pending")
+    if (pendingFiles.length === 0) return
 
     setIsUploading(true)
-    setFiles((prev) =>
-      prev.map((f) =>
-        f.status === "pending" ? { ...f, status: "uploading", progress: 30 } : f
-      )
-    )
 
-    try {
-      // Envoyer tout le lot en une seule fois côté page parent.
-      // Evite de naviguer dès le 1er fichier et d'interrompre le reste.
-      await onUpload(validFiles.map((f) => f.file), selectedBank)
-      // Nettoyer la zone upload dès que les fichiers sont bien enregistrés en backend.
-      setFiles([])
-    } catch (err) {
+    for (const fileItem of pendingFiles) {
       setFiles((prev) =>
         prev.map((f) =>
-          validFiles.some((vf) => vf.id === f.id)
-            ? { ...f, status: "error", error: "Erreur lors de l'upload", progress: 0 }
-            : f
+          f.id === fileItem.id ? { ...f, status: "uploading", progress: 30, error: undefined } : f
         )
       )
-    } finally {
-      setIsUploading(false)
+      try {
+        await onUpload(fileItem.file, selectedBank)
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === fileItem.id ? { ...f, status: "success", progress: 100 } : f
+          )
+        )
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Erreur lors de l'upload"
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === fileItem.id ? { ...f, status: "error", error: message, progress: 0 } : f
+          )
+        )
+      }
     }
+
+    setIsUploading(false)
+    await onUploadComplete?.()
   }
 
     const formatFileSize = (bytes: number): string => {

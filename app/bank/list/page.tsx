@@ -83,15 +83,10 @@ function BankListPageContent() {
         return true
     })
 
-    const handleUpload = async (files: File[], bankType?: string) => {
+    const handleUpload = async (file: File, bankType?: string) => {
         const effectiveBankType = bankType || "AUTO"
         const allowedBanks: string[] = []
-
-        for (const file of files) {
-            await api.uploadBankStatement(file, effectiveBankType, allowedBanks)
-        }
-        toast.success("Import terminé")
-        await loadData()
+        await api.uploadBankStatement(file, effectiveBankType, allowedBanks)
     }
 
     const handleView = (statement: BankStatementV2) => {
@@ -207,7 +202,14 @@ function BankListPageContent() {
 
     return (
         <div className="container mx-auto py-6 space-y-6">
-            <UploadBankPage onUpload={handleUpload} onViewBankStatement={() => {}} />
+            <UploadBankPage
+                onUpload={handleUpload}
+                onUploadComplete={async () => {
+                    await loadData()
+                    toast.success("Import terminé")
+                }}
+                onViewBankStatement={() => {}}
+            />
 
             <Card className="border-border/50 bg-card/50">
                 <CardHeader>

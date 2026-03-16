@@ -64,6 +64,7 @@ import {
     Link as LinkIcon,
     CheckCircle2,
     Calculator,
+    MoreHorizontal,
 } from "lucide-react"
 import type { Account } from "@/lib/types"
 import type { BankStatementV2, BankTransactionV2 } from "@/releve-bancaire/types"
@@ -102,6 +103,7 @@ const EMPTY_NEW_TRANSACTION: NewTransactionForm = {
 }
 
 const DEFAULT_COMPTE_CODE = "349700000"
+const DEFAULT_COMPTE_CM_CODE = "342100000"
 
 function isValidatedStatus(status: string): boolean {
     return ["VALIDATED", "VALIDE"].includes(status)
@@ -138,17 +140,36 @@ function isCommissionVisualLine(value?: string | null): boolean {
     return /\bCOMM?ISSION\b/.test(normalized)
 }
 
-function isSelectedCompte(value?: string | null): boolean {
-    return resolveDisplayCompte(value) !== DEFAULT_COMPTE_CODE
+const RELEVE_OPERATIONS_HINTS = [
+    "RELEVE DES OPERATIONS",
+    "RELEVE D OPERATIONS",
+    "RELEVE DES OPERATION",
+    "RELEVE D OPERATION",
+    "RELEVE OPERATIONS",
+    "RELEVE OPERATION",
+]
+
+function isOperationsReleveLibelle(value?: string | null): boolean {
+    const normalized = normalizeLibelle(value)
+    if (!normalized) return false
+    return RELEVE_OPERATIONS_HINTS.some((hint) => normalized.includes(hint))
+}
+
+function resolveCompteWithDefaults(
+    compte: string | null | undefined,
+    libelle: string | null | undefined,
+    hasCentreMonetique: boolean
+): string {
+    const trimmed = (compte || "").trim()
+    if (trimmed !== "" && trimmed !== DEFAULT_COMPTE_CODE) return trimmed
+    if (hasCentreMonetique || isOperationsReleveLibelle(libelle)) {
+        return DEFAULT_COMPTE_CM_CODE
+    }
+    return trimmed === "" ? DEFAULT_COMPTE_CODE : trimmed
 }
 
 function isDefaultCompte(value?: string | null): boolean {
-    return resolveDisplayCompte(value) === DEFAULT_COMPTE_CODE
-}
-
-function resolveDisplayCompte(value?: string | null): string {
-    const compte = (value || "").trim()
-    return compte === "" ? DEFAULT_COMPTE_CODE : compte
+    return (value || "").trim() === DEFAULT_COMPTE_CODE
 }
 
 export function BankStatementDetailModal({
@@ -184,6 +205,26 @@ export function BankStatementDetailModal({
     const [cmExpansions, setCmExpansions] = useState<Record<number, CmExpansion>>({})
     // bankTransactionIds où l'utilisateur a décoché l'expansion (affiche la ligne originale)
     const [collapsedCmTxIds, setCollapsedCmTxIds] = useState<Set<number>>(new Set())
+
+    const resolveDisplayCompteForTx = (tx: BankTransactionV2): string => {
+        return resolveCompteWithDefaults(tx.compte, tx.libelle, Boolean(cmExpansions[tx.id]))
+    }
+
+    const isSelectedCompteForTx = (tx: BankTransactionV2): boolean => {
+        return resolveDisplayCompteForTx(tx) !== DEFAULT_COMPTE_CODE
+    }
+
+    const cmSummary = useMemo(() => {
+        const linkedIds = new Set<number>()
+        for (const key of Object.keys(cmExpansions)) {
+            const id = Number(key)
+            if (!Number.isNaN(id)) linkedIds.add(id)
+        }
+        const linkedCount = linkedIds.size
+        const appliedCount = editableTransactions.filter((tx) => linkedIds.has(tx.id) && Boolean(tx.cmApplied)).length
+        const skippedCount = Math.max(linkedCount - appliedCount, 0)
+        return { linkedCount, appliedCount, skippedCount }
+    }, [cmExpansions, editableTransactions])
 
     useEffect(() => {
         if (open && statement) {
@@ -246,7 +287,8 @@ export function BankStatementDetailModal({
                     map[exp.bankTransactionId] = exp
                 }
                 setCmExpansions(map)
-                setCollapsedCmTxIds(new Set()) // réinitialiser les préférences à chaque chargement
+                // par défaut: détails masqués pour toutes les liaisons CM
+                setCollapsedCmTxIds(new Set(expansions.map((exp) => exp.bankTransactionId)))
             }).catch(() => {/* silencieux */})
             return data
         } catch (error) {
@@ -367,8 +409,8 @@ export function BankStatementDetailModal({
         const readOnly = !!localStatement && isAccountedStatus(localStatement.status)
         const isEditing = isEditingCell(tx.id, field)
         const rawValue = (tx[field] ?? "") as string | number
-        const value = field === "compte" && typeof rawValue === "string"
-            ? resolveDisplayCompte(rawValue)
+        const value = field === "compte"
+            ? resolveDisplayCompteForTx(tx)
             : rawValue
         const displayValue = field === "compte"
             ? String(value)
@@ -436,6 +478,7 @@ export function BankStatementDetailModal({
             sens: Number(newTransaction.debit || 0) > 0 ? "DEBIT" : "CREDIT",
             compte: newTransaction.compte,
             isLinked: false,
+            cmApplied: false,
             categorie: "MANUAL",
             role: "MANUAL",
             extractionConfidence: 1,
@@ -470,7 +513,8 @@ export function BankStatementDetailModal({
                 tx.compte !== base.compte ||
                 tx.libelle !== base.libelle ||
                 tx.debit !== base.debit ||
-                tx.credit !== base.credit
+                tx.credit !== base.credit ||
+                Boolean(tx.cmApplied) !== Boolean(base.cmApplied)
             )
         })
     }, [editableTransactions, transactions])
@@ -483,13 +527,13 @@ export function BankStatementDetailModal({
         for (const tx of toPersist) {
             const normalized = normalizeLibelle(tx.libelle)
             if (!normalized) continue
-            if (isSelectedCompte(tx.compte)) {
-                learnedByLibelle.set(normalized, tx.compte.trim())
+            if (isSelectedCompteForTx(tx)) {
+                learnedByLibelle.set(normalized, resolveDisplayCompteForTx(tx).trim())
             }
         }
 
         const effectiveRows = toPersist.map((tx) => {
-            if (isSelectedCompte(tx.compte)) return tx
+            if (isSelectedCompteForTx(tx)) return { ...tx, compte: resolveDisplayCompteForTx(tx) }
             const learned = learnedByLibelle.get(normalizeLibelle(tx.libelle))
             if (!learned) return tx
             return { ...tx, compte: learned, isLinked: true }
@@ -505,12 +549,13 @@ export function BankStatementDetailModal({
                     transactionIndex: tx.transactionIndex ?? 0,
                     dateOperation: tx.dateOperation,
                     dateValeur: tx.dateValeur,
-                    compte: isSelectedCompte(tx.compte) ? tx.compte : "",
+                    compte: isSelectedCompteForTx(tx) ? resolveDisplayCompteForTx(tx) : "",
                     libelle: tx.libelle,
                     debit: Number(tx.debit || 0),
                     credit: Number(tx.credit || 0),
                     sens: Number(tx.debit || 0) > 0 ? "DEBIT" : "CREDIT",
-                    isLinked: isSelectedCompte(tx.compte),
+                    isLinked: isSelectedCompteForTx(tx),
+                    cmApplied: Boolean(tx.cmApplied),
                 }
                 return api.updateBankTransaction(tx.id, payload)
             })
@@ -522,12 +567,13 @@ export function BankStatementDetailModal({
                     dateOperation: tx.dateOperation,
                     dateValeur: tx.dateValeur,
                     libelle: tx.libelle,
-                    compte: isSelectedCompte(tx.compte) ? tx.compte : "",
+                    compte: isSelectedCompteForTx(tx) ? resolveDisplayCompteForTx(tx) : "",
                     categorie: tx.categorie,
                     sens: tx.sens,
                     debit: Number(tx.debit || 0),
                     credit: Number(tx.credit || 0),
-                    isLinked: isSelectedCompte(tx.compte),
+                    isLinked: isSelectedCompteForTx(tx),
+                    cmApplied: Boolean(tx.cmApplied),
                 })
             })
 
@@ -950,6 +996,18 @@ export function BankStatementDetailModal({
                                 </div>
                             )}
                             <div className="flex-1 min-h-0 overflow-y-auto">
+                                <div className="px-4 py-3 border-b bg-muted/30 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                    <span className="font-medium">Liaisons Centre Monétique:</span>
+                                    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-emerald-800">
+                                        Liées (coché) {cmSummary.appliedCount}
+                                    </span>
+                                    <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-blue-800">
+                                        Liées (décoché) {cmSummary.skippedCount}
+                                    </span>
+                                    <span className="inline-flex items-center gap-1 rounded-full border border-muted-foreground/20 bg-white/60 px-2 py-0.5 text-muted-foreground">
+                                        Total liaisons {cmSummary.linkedCount}
+                                    </span>
+                                </div>
                                 <Table>
                                     <TableHeader>
                                         <TableRow className="bg-muted/50 hover:bg-muted/50">
@@ -963,13 +1021,14 @@ export function BankStatementDetailModal({
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {sortByIndex(editableTransactions).map((tx) => {
+                                        {sortByIndex(editableTransactions).map((tx, idx) => {
                                             const cmExp = cmExpansions[tx.id]
                                             const isExpanded = cmExp != null && !collapsedCmTxIds.has(tx.id)
+                                            const isCmLinked = cmExp != null
 
                                             // ---- Lignes CM de remplacement ----
                                             if (isExpanded) {
-                                                const cmDisplayCompte = resolveDisplayCompte(tx.compte)
+                                                const cmDisplayCompte = resolveDisplayCompteForTx(tx)
                                                 const cmCompteIsDefault = isDefaultCompte(cmDisplayCompte)
                                                 const cmHasCompteLibelle = (tx.compteLibelle || "").trim() !== ""
                                                 return (
@@ -980,6 +1039,11 @@ export function BankStatementDetailModal({
                                                                 <Checkbox
                                                                     checked={true}
                                                                     onCheckedChange={() => {
+                                                                        setEditableTransactions((prev) =>
+                                                                            prev.map((row) =>
+                                                                                row.id === tx.id ? { ...row, cmApplied: false } : row
+                                                                            )
+                                                                        )
                                                                         setCollapsedCmTxIds((prev) => {
                                                                             const next = new Set(prev)
                                                                             next.add(tx.id)
@@ -1021,7 +1085,7 @@ export function BankStatementDetailModal({
                                                                             ? "border-orange-500 bg-orange-100 text-orange-900"
                                                                             : tx.isLinked
                                                                                 ? "border-orange-500 bg-transparent text-foreground"
-                                                                                : isSelectedCompte(tx.compte)
+                                                                                : isSelectedCompteForTx(tx)
                                                                                     ? "border-orange-500 bg-orange-100 text-orange-900"
                                                                                     : "border-transparent text-muted-foreground"
                                                                     )}>
@@ -1030,7 +1094,7 @@ export function BankStatementDetailModal({
                                                                                 "h-6 w-6 rounded flex items-center justify-center",
                                                                                 cmCompteIsDefault ? "bg-white text-orange-700"
                                                                                     : tx.isLinked ? "bg-orange-100 text-orange-700"
-                                                                                    : isSelectedCompte(tx.compte) ? "bg-white text-orange-700"
+                                                                                    : isSelectedCompteForTx(tx) ? "bg-white text-orange-700"
                                                                                     : "bg-muted text-muted-foreground"
                                                                             )}>
                                                                                 <LinkIcon className="h-3.5 w-3.5" />
@@ -1106,12 +1170,23 @@ export function BankStatementDetailModal({
                                             }
 
                                             // ---- Ligne bancaire originale ----
-                                            const displayCompte = resolveDisplayCompte(tx.compte)
+                                            const displayCompte = resolveDisplayCompteForTx(tx)
                                             const hasCompteLibelle = (tx.compteLibelle || "").trim() !== ""
                                             const compteIsDefault = isDefaultCompte(displayCompte)
                                             const isCommissionLine = isCommissionVisualLine(tx.libelle)
                                             return (
-                                            <TableRow key={tx.id} className={cn(isCommissionLine ? "bg-sky-50/80 hover:bg-sky-100/80" : "hover:bg-muted/20")}>
+                                            <TableRow
+                                                key={tx.id}
+                                                className={cn(
+                                                    isCmLinked && Boolean(tx.cmApplied)
+                                                        ? "bg-emerald-50/70 hover:bg-emerald-100/70"
+                                                        : isCmLinked
+                                                            ? "bg-blue-50/70 hover:bg-blue-100/70"
+                                                            : isCommissionLine
+                                                                ? "bg-orange-50/70 hover:bg-orange-100/70"
+                                                                : (idx % 2 === 0 ? "bg-white hover:bg-muted/20" : "bg-muted/30 hover:bg-muted/40")
+                                                )}
+                                            >
                                             <TableCell className="text-center">
                                                 {isEditingCell(tx.id, "transactionIndex") ? (
                                                     renderEditableCell(tx, "transactionIndex", { type: "number" })
@@ -1127,13 +1202,37 @@ export function BankStatementDetailModal({
                                                             {tx.transactionIndex || tx.id}
                                                         </Badge>
                                                         {cmExp != null && (
-                                                            <button
-                                                                className="text-[9px] text-amber-600 hover:text-amber-800 underline leading-none"
-                                                                onClick={() => setCollapsedCmTxIds((prev) => { const next = new Set(prev); next.delete(tx.id); return next })}
-                                                                title="Afficher les détails Centre Monétique"
-                                                            >
-                                                                CM
-                                                            </button>
+                                                            <div className="flex items-center gap-1">
+                                                                <Checkbox
+                                                                    checked={Boolean(tx.cmApplied)}
+                                                                    onCheckedChange={(checked) => {
+                                                                        const nextApplied = checked === true
+                                                                        setEditableTransactions((prev) =>
+                                                                            prev.map((row) =>
+                                                                                row.id === tx.id ? { ...row, cmApplied: nextApplied } : row
+                                                                            )
+                                                                        )
+                                                                    }}
+                                                                    className="border-emerald-500 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
+                                                                    title="Cocher pour appliquer la liaison"
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    className="h-6 w-6 inline-flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                                                                    onClick={() => setCollapsedCmTxIds((prev) => {
+                                                                        const next = new Set(prev)
+                                                                        if (next.has(tx.id)) {
+                                                                            next.delete(tx.id)
+                                                                        } else {
+                                                                            next.add(tx.id)
+                                                                        }
+                                                                        return next
+                                                                    })}
+                                                                    title="Afficher/Masquer les détails"
+                                                                >
+                                                                    <MoreHorizontal className="h-4 w-4" />
+                                                                </button>
+                                                            </div>
                                                         )}
                                                     </div>
                                                 )}
@@ -1164,7 +1263,7 @@ export function BankStatementDetailModal({
                                                                         ? "border-orange-500 bg-orange-100 text-orange-900 hover:bg-orange-200"
                                                                         : tx.isLinked
                                                                             ? "border-orange-500 bg-transparent text-foreground hover:bg-orange-50/50"
-                                                                            : isSelectedCompte(tx.compte)
+                                                                            : isSelectedCompteForTx(tx)
                                                                                 ? "border-orange-500 bg-orange-100 text-orange-900 hover:bg-orange-200"
                                                                                 : "border-transparent hover:bg-muted text-muted-foreground"
                                                                 )}
@@ -1176,7 +1275,7 @@ export function BankStatementDetailModal({
                                                                             ? "bg-white text-orange-700"
                                                                             : tx.isLinked
                                                                                 ? "bg-orange-100 text-orange-700"
-                                                                                : isSelectedCompte(tx.compte)
+                                                                                : isSelectedCompteForTx(tx)
                                                                                     ? "bg-white text-orange-700"
                                                                                     : "bg-muted text-muted-foreground group-hover:bg-muted-foreground/20"
                                                                     )}>
@@ -1216,7 +1315,7 @@ export function BankStatementDetailModal({
                                                                                                 row.id === tx.id || (
                                                                                                     targetLibelle !== "" &&
                                                                                                     normalizeLibelle(row.libelle) === targetLibelle &&
-                                                                                                    !isSelectedCompte(row.compte)
+                                                                                                    !isSelectedCompteForTx(row)
                                                                                                 )
                                                                                                     ? { ...row, compte: account.code, compteLibelle: account.libelle, isLinked: true }
                                                                                                     : row
@@ -1297,7 +1396,7 @@ export function BankStatementDetailModal({
                     <DialogHeader>
                         <DialogTitle>Simulation de Comptabilisation</DialogTitle>
                         <DialogDescription>
-                            Chaque transaction du relevé est transformée automatiquement en 2 écritures comptables.
+                            Chaque transaction du relevé est transformée automatiquement en 2 ou 4 écritures comptables.
                         </DialogDescription>
                     </DialogHeader>
 
@@ -1316,7 +1415,6 @@ export function BankStatementDetailModal({
                                         <TableHeader>
                                             <TableRow className="bg-muted/40">
                                                 <TableHead>Numero</TableHead>
-                                                <TableHead>Mois</TableHead>
                                                 <TableHead>Date</TableHead>
                                                 <TableHead>Journal</TableHead>
                                                 <TableHead>N° Compte</TableHead>
@@ -1326,18 +1424,29 @@ export function BankStatementDetailModal({
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {simulationResult.entries.map((row: any, index: number) => (
-                                                <TableRow key={`${row.numero}-${index}`} className={row.counterpart ? "bg-muted/30" : ""}>
+                                            {(() => {
+                                                const groupIndexByNumero = new Map<number, number>()
+                                                let groupIndex = 0
+                                                return simulationResult.entries.map((row: any, index: number) => {
+                                                    const numero = Number(row.numero)
+                                                    if (!groupIndexByNumero.has(numero)) {
+                                                        groupIndexByNumero.set(numero, groupIndex)
+                                                        groupIndex += 1
+                                                    }
+                                                    const tone = (groupIndexByNumero.get(numero) ?? 0) % 2
+                                                    return (
+                                                        <TableRow key={`${row.numero}-${index}`} className={tone === 1 ? "bg-muted/50" : ""}>
                                                     <TableCell className="font-mono text-xs">{row.numero}</TableCell>
-                                                    <TableCell>{row.moisTexte} ({row.nmoisTexte})</TableCell>
                                                     <TableCell>{row.dateOperation ? new Date(row.dateOperation).toLocaleDateString("fr-FR") : "-"}</TableCell>
                                                     <TableCell>{row.journal}</TableCell>
                                                     <TableCell className="font-mono">{row.ncompte}</TableCell>
                                                     <TableCell className="max-w-[280px] truncate" title={row.libelle}>{row.libelle || "-"}</TableCell>
                                                     <TableCell className="text-right text-red-600">{Number(row.debit || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                                     <TableCell className="text-right text-emerald-600">{Number(row.credit || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                                                </TableRow>
-                                            ))}
+                                                        </TableRow>
+                                                    )
+                                                })
+                                            })()}
                                         </TableBody>
                                     </Table>
                                 </div>
